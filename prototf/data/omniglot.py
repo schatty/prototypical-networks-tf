@@ -47,11 +47,13 @@ def load_and_preprocess_image(img_path, rot):
     return preprocess_image(image, rot)
 
 
-def load_class_images(img_paths, rot, n_support=5, n_query=5):
+def load_class_images(class_name, img_paths, rot):
     n_examples = img_paths.shape[0]
     example_inds = tf.range(n_examples)
     example_inds = tf.random.shuffle(example_inds)
 
+    n_support = 5
+    n_query = 5
     support_inds = example_inds[:n_support]
     support_paths = tf.gather(img_paths, support_inds)
     query_inds = example_inds[n_support:]
@@ -117,7 +119,6 @@ def load_omniglot(config, splits):
 
         class_paths_ds = tf.data.Dataset.zip((class_paths_ds, img_paths_ds, rotates_ds))
         class_imgs_ds = class_paths_ds.map(load_class_images)
-
         ret[split] = class_imgs_ds
 
     return ret
