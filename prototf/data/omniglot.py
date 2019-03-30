@@ -1,4 +1,4 @@
-mport os
+import os
 import sys
 import glob
 import random
@@ -7,10 +7,10 @@ from functools import partial
 
 import numpy as np
 from PIL import Image
-
 import tensorflow as tf
 
-OMNIGLOT_DATA_DIR = os.path.join(__file__, 'data/omniglot')
+OMNIGLOT_DATA_DIR = os.path.join('./data/omniglot')
+
 
 def class_names_to_paths(class_names):
     d = []
@@ -21,6 +21,7 @@ def class_names_to_paths(class_names):
         d.append(image_dir)
         rots.append(rot)
     return d, rots
+
 
 def get_class_images_paths(dir_paths, rotates):
     classes, img_paths, rotates_list = [], [], []
@@ -45,7 +46,8 @@ def load_and_preprocess_image(img_path, rot):
     image = tf.io.read_file(img_path)
     return preprocess_image(image, rot)
 
-def load_class_images(class_name, img_paths, rot):
+
+def load_class_images(img_paths, rot, n_support=5, n_query=5):
     n_examples = img_paths.shape[0]
     example_inds = tf.range(n_examples)
     example_inds = tf.random.shuffle(example_inds)
@@ -72,7 +74,7 @@ def load_class_images(class_name, img_paths, rot):
     return ds_support, ds_query
 
 
-def load(config, splits):
+def load_omniglot(config, splits):
     split_dir = os.path.join(OMNIGLOT_DATA_DIR, 'splits', config['data.split'])
 
     ret = {}
@@ -81,7 +83,7 @@ def load(config, splits):
         if split in ['val', 'test'] and config['data.test_way'] != 0:
             n_way = config['data.test_way']
         else:
-            n_way = config['data.train_way']i
+            n_way = config['data.train_way']
 
         # n_support (number of support examples per class)
         if split in ['val', 'test'] and config['data.test_n_support'] != 0:
@@ -111,11 +113,11 @@ def load(config, splits):
 
         class_paths_ds = tf.data.Dataset.from_tensor_slices(classes)
         img_paths_ds = tf.data.Dataset.from_tensor_slices(img_paths)
-        rotates_ds =  tf.data.Dataset.from_tensor_slices(rotatess)
+        rotates_ds = tf.data.Dataset.from_tensor_slices(rotatess)
 
         class_paths_ds = tf.data.Dataset.zip((class_paths_ds, img_paths_ds, rotates_ds))
         class_imgs_ds = class_paths_ds.map(load_class_images)
 
-        ret[split] = class_img_ds
+        ret[split] = class_imgs_ds
 
     return ret
