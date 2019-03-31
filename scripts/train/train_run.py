@@ -6,8 +6,8 @@ parser = argparse.ArgumentParser(description='Run training')
 
 default_ds = "omniglot"
 default_split = "vinyals"
-default_train_way = 60
-default_test_way = default_train_way
+default_train_way = 50
+default_test_way = 5
 default_n_support = 5
 default_test_n_support = 5
 default_n_query = 5
@@ -52,7 +52,7 @@ default_epochs = 10
 default_optim = 'Adam'
 default_lr = 0.001
 default_decay_every = 20
-default_decay_weight = 0.0
+default_weight_decay = 0.0
 default_patience = 10
 
 parser.add_argument('--train.epochs', type=int, default=default_epochs,
@@ -63,8 +63,8 @@ parser.add_argument("--train.lr", type=float, default=default_lr,
                     help=f"learning rate (default: {default_lr})")
 parser.add_argument("--train.decay_every", type=int, default=default_decay_every,
                     help="number of epochs after which to decay the larning rate")
-parser.add_argument("--train.decay_weight", type=float, default=default_decay_weight,
-                    help=f"weight decay (default: {default_decay_weight})")
+parser.add_argument("--train.weight_decay", type=float, default=default_weight_decay,
+                    help=f"weight decay (default: {default_weight_decay})")
 parser.add_argument("--train.patience", type=int, default=default_patience,
                     help=f"number of non-improving epochs after which training stops (default: {default_patience})")
 

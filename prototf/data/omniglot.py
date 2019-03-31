@@ -9,15 +9,13 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 
-OMNIGLOT_DATA_DIR = os.path.join('./data/omniglot')
 
-
-def class_names_to_paths(class_names):
+def class_names_to_paths(data_dir, class_names):
     d = []
     rots = []
     for class_name in class_names:
         alphabet, character, rot = class_name.split('/')
-        image_dir = os.path.join(OMNIGLOT_DATA_DIR, 'data', alphabet, character)
+        image_dir = os.path.join(data_dir, 'data', alphabet, character)
         d.append(image_dir)
         rots.append(rot)
     return d, rots
@@ -34,7 +32,7 @@ def get_class_images_paths(dir_paths, rotates):
     return classes, img_paths, rotates_list
 
 
-def preprocess_image(img, rot):        
+def preprocess_image(img, rot):
     image = tf.image.decode_png(img, channels=1)
     image = tf.cast(image, tf.float32)
     image = tf.image.resize(image, (28, 28))
@@ -49,11 +47,13 @@ def load_and_preprocess_image(img_path, rot):
 
 def load_class_images(class_name, img_paths, rot):
     n_examples = img_paths.shape[0]
-    example_inds = tf.range(n_examples)
-    example_inds = tf.random.shuffle(example_inds)
 
     n_support = 5
     n_query = 5
+
+    example_inds = tf.range(n_examples)
+    example_inds = tf.random.shuffle(example_inds)
+
     support_inds = example_inds[:n_support]
     support_paths = tf.gather(img_paths, support_inds)
     query_inds = example_inds[n_support:]
@@ -76,7 +76,8 @@ def load_class_images(class_name, img_paths, rot):
     return ds_support, ds_query
 
 
-def load_omniglot(config, splits):
+def load_omniglot(data_dir, config, splits):
+    OMNIGLOT_DATA_DIR = data_dir
     split_dir = os.path.join(OMNIGLOT_DATA_DIR, 'splits', config['data.split'])
 
     ret = {}
@@ -110,15 +111,17 @@ def load_omniglot(config, splits):
             for class_name in f.readlines():
                 class_names.append(class_name.rstrip('\n'))
 
-        class_paths, rotates = class_names_to_paths(class_names)
-        classes, img_paths, rotatess = get_class_images_paths(class_paths, rotates)
+        class_paths, rotates = class_names_to_paths(data_dir, class_names)
+        classes, img_paths, rotatess = get_class_images_paths(class_paths,
+                                                              rotates)
 
         class_paths_ds = tf.data.Dataset.from_tensor_slices(classes)
         img_paths_ds = tf.data.Dataset.from_tensor_slices(img_paths)
         rotates_ds = tf.data.Dataset.from_tensor_slices(rotatess)
 
-        class_paths_ds = tf.data.Dataset.zip((class_paths_ds, img_paths_ds, rotates_ds))
+        class_paths_ds = tf.data.Dataset.zip(
+            (class_paths_ds, img_paths_ds, rotates_ds))
         class_imgs_ds = class_paths_ds.map(load_class_images)
-        ret[split] = class_imgs_ds
 
+        ret[split] = class_imgs_ds
     return ret
