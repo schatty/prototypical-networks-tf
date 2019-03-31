@@ -9,29 +9,29 @@ from tensorflow.keras import Model
 class Prototypical(Model):
     def __init__(self):
         super(Prototypical, self).__init__()
-        self.conv1 = Conv2D(32, 3, activation='relu')
-        self.flatten = Flatten()
-        self.d1 = Dense(128, activation='relu')
-        self.d2 = Dense(10, activation='softmax')
 
         self.encoder = tf.keras.Sequential([
             tf.keras.layers.Conv2D(filters=64, kernel_size=3, padding='same'),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.ReLU(),
-            tf.keras.layers.MaxPool2D((2, 2)), Flatten()]
-        )
+            tf.keras.layers.MaxPool2D((2, 2)),
+       
+            tf.keras.layers.Conv2D(filters=64, kernel_size=3, padding='same'),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.ReLU(),
+            tf.keras.layers.MaxPool2D((2, 2)), 
 
-    # def encoder(self, x):
-    #     #x = self.conv1(x)
-    #     #x = self.flatten(x)
-    #     #x = self.d1(x)
-    #     #return self.d2(x)
-    #     return tf.keras.Sequential([
-    #         tf.keras.layers.Conv2D(filters=64, kernel_size=3, padding='same'),
-    #         tf.keras.layers.BatchNormalization(),
-    #         tf.keras.layers.ReLU(),
-    #         tf.keras.layers.MaxPool2D((2, 2)), Flatten()]
-    #     )(x)
+            tf.keras.layers.Conv2D(filters=64, kernel_size=3, padding='same'),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.ReLU(),
+            tf.keras.layers.MaxPool2D((2, 2)),
+             
+            tf.keras.layers.Conv2D(filters=64, kernel_size=3, padding='same'),
+            tf.keras.layers.BatchNormalization(),
+            tf.keras.layers.ReLU(),
+            tf.keras.layers.MaxPool2D((2, 2)), Flatten()]
+ 
+            )
 
     def call(self, support, query):
         n_class = support.shape[0]
@@ -41,7 +41,10 @@ class Prototypical(Model):
         h = support.shape[3]
         c = support.shape[4]
 
+        print("n_class: ", n_class)
+
         target_inds = tf.reshape(tf.range(n_class), [n_class, 1])
+        print("Target inds original: ", target_inds.shape)
         target_inds = tf.tile(target_inds, [1, n_support])
         print("Target inds: ", target_inds.shape)
 
@@ -64,9 +67,9 @@ class Prototypical(Model):
 
         dists = calc_euclidian_dists(z_query, z_prototypes)
 
-        soft = tf.nn.softmax(dists, axis=-1)
-        soft = tf.reshape(soft, [n_class, n_query, -1])
-        print("Softmax: ", soft.shape)
+        log_p_y = tf.nn.log_softmax(-dists, axis=-1)
+        log_p_y = tf.reshape(log_p_y, [n_class, n_query, -1])
+        print("Log Prob: ", log_p_y.shape)
 
         #inds = np.arange(n_class)
         #loss = -tf.gather(soft, inds, axis=2)
@@ -76,16 +79,16 @@ class Prototypical(Model):
         inds = [[i, i//n_support] for i in list(range(n_class * n_query))]
         print("INDS: ", len(inds), len(inds[0]))
 
-        loss = -tf.gather_nd(tf.reshape(soft, [n_class*n_query, -1]), inds)
+        loss = -tf.gather_nd(tf.reshape(log_p_y, [n_class*n_query, -1]), inds)
         loss = tf.reshape(loss, [n_class, n_query])
         print("loss: ", loss.shape)
         loss_mean = tf.reduce_mean(loss)
 
-        y_pred = tf.math.argmax(soft, axis=-1)
-        eq = tf.math.equal(tf.cast(y_pred, tf.int32), target_inds)
+        y_pred = tf.math.argmax(log_p_y, axis=2)
+        eq = tf.math.equal(tf.cast(y_pred, tf.int32), tf.cast(target_inds, tf.int32))
         eq = tf.cast(eq, np.int32)
         print("eq: ", eq.shape)
-        acc = tf.reduce_mean(eq)
+        acc = tf.reduce_sum(eq) / (n_class * n_query)
 
         return loss_mean, acc
 
@@ -95,13 +98,15 @@ def calc_euclidian_dists(x, y):
     m = y.shape[0]
     d = x.shape[0]
 
+    print("Euclicd orig: ", x.shape, y.shape)
+
     x = tf.tile(tf.expand_dims(x, 1), [1, m, 1])
     y = tf.tile(tf.expand_dims(y, 0), [n, 1, 1])
 
     print("x: ", x.shape)
     print("y: ", y.shape)
 
-    res = tf.reduce_sum(tf.math.pow(x - y, 2), -1)
+    res = tf.reduce_sum(tf.math.pow(x - y, 2), 2)
     print("Euclid result: ", res.shape)
 
     return res
@@ -117,15 +122,14 @@ class Experiment(object):
 
         train_loss = tf.keras.metrics.Mean(name='train_loss')
         acc_monitor = tf.keras.metrics.Mean(name='train_accuracy')
-        #loss_object = tf.losses.LogLoss()
-        optimizer = tf.keras.optimizers.Adam()
+        optimizer = tf.keras.optimizers.Adam(0.005)
 
         @tf.function
         def train_step(support, query):
             with tf.GradientTape() as tape:
                 loss, acc = model(support, query)
-                #loss = loss_object(np.ones(y_pred.shape[0]), y_pred)
             gradients = tape.gradient(loss, model.trainable_variables)
+            print("Trainable parameters: ", model.trainable_variables)
             optimizer.apply_gradients(
                 zip(gradients, model.trainable_variables))
 
@@ -142,12 +146,12 @@ class Experiment(object):
         #     test_loss(t_loss)
         #     test_accuracy(label, predictions)
 
-        n_epochs = 100
+        n_episodes = self.config['data.train_episodes']
         sss = 0
-        for epoch in range(n_epochs):
+        for episode in range(n_episodes):
             for support, query in loader:
                 train_step(support, query)
-                print("Step ", sss)
+                #print("Step ", sss)
                 sss += 1
                 #break
             # for test_image, test_label in test_loader:
@@ -155,7 +159,7 @@ class Experiment(object):
 
             #template = 'Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, Test Accuracy: {}'
             template = 'Epoch {}, Loss: {}, Acc: {}'
-            print(template.format(epoch + 1, train_loss.result(), acc_monitor.result()))
+            print(template.format(episode + 1, train_loss.result(), acc_monitor.result()))
                                   #test_loss.result(),
                                   #test_accuracy.result() * 100))
 
@@ -176,17 +180,18 @@ class Experiment(object):
 
 def train(config):
     print("Config: ", config)
-    data_dir = './data/omniglot'
+    data_dir = '/home/igor/dl/prototypical-networks/data/omniglot'
     ret = load(data_dir, config, ['train'])
     img_ds = ret['train']
-    img_ds = img_ds.batch(config['data.train_way'])
+    img_ds = img_ds.batch(60)#config['data.train_way'])
 
     experiment = Experiment(config)
-    experiment.train(
-        model=None,
-        loader=img_ds,
-        optim_method=config['train.optim_method'],
-        optim_config={'lr': config['train.lr'],
-                      'weight_decay': config['train.weight_decay']},
-        max_epoch=config['train.epochs']
-    )
+    with tf.device('/gpu:0'):
+        experiment.train(
+            model=None,
+            loader=img_ds,
+            optim_method=config['train.optim_method'],
+            optim_config={'lr': config['train.lr'],
+                          'weight_decay': config['train.weight_decay']},
+            max_epoch=config['train.epochs']
+        )

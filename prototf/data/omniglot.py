@@ -37,6 +37,7 @@ def preprocess_image(img, rot):
     image = tf.cast(image, tf.float32)
     image = tf.image.resize(image, (28, 28))
     image /= 255.0
+    image = 1-image
     return image
 
 
@@ -65,6 +66,7 @@ def load_class_images(class_name, img_paths, rot):
         img = load_and_preprocess_image(support_paths[i], rot)
         support_imgs.append(tf.expand_dims(img, 0))
     ds_support = tf.concat(support_imgs, axis=0)
+    ds_support = tf.image.rot90(ds_support, k=rot//90)
 
     # Create query dataset
     query_imgs = []
@@ -72,6 +74,7 @@ def load_class_images(class_name, img_paths, rot):
         img = load_and_preprocess_image(query_paths[i], rot)
         query_imgs.append(tf.expand_dims(img, 0))
     ds_query = tf.concat(query_imgs, axis=0)
+    ds_query = tf.image.rot90(ds_query, k=rot//90)
 
     return ds_support, ds_query
 

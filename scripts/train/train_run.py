@@ -12,7 +12,7 @@ default_n_support = 5
 default_test_n_support = 5
 default_n_query = 5
 default_test_n_query = default_n_query
-default_train_episodes = 10
+default_train_episodes = 100
 default_test_episodes = default_train_episodes
 
 # data
