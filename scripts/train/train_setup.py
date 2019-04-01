@@ -30,10 +30,11 @@ class Prototypical(Model):
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.ReLU(),
             tf.keras.layers.MaxPool2D((2, 2)), Flatten()]
- 
-            )
+        )
 
     def call(self, support, query):
+        print("Support shape: ", support.shape)
+
         n_class = support.shape[0]
         n_support = support.shape[1]
         n_query = query.shape[1]
@@ -71,11 +72,6 @@ class Prototypical(Model):
         log_p_y = tf.reshape(log_p_y, [n_class, n_query, -1])
         print("Log Prob: ", log_p_y.shape)
 
-        #inds = np.arange(n_class)
-        #loss = -tf.gather(soft, inds, axis=2)
-        #print("loss: ", loss.shape)
-        #loss_mean = tf.reduce_mean(loss)
-
         inds = [[i, i//n_support] for i in list(range(n_class * n_query))]
         print("INDS: ", len(inds), len(inds[0]))
 
@@ -96,100 +92,85 @@ class Prototypical(Model):
 def calc_euclidian_dists(x, y):
     n = x.shape[0]
     m = y.shape[0]
-    d = x.shape[0]
-
-    print("Euclicd orig: ", x.shape, y.shape)
-
     x = tf.tile(tf.expand_dims(x, 1), [1, m, 1])
     y = tf.tile(tf.expand_dims(y, 0), [n, 1, 1])
-
-    print("x: ", x.shape)
-    print("y: ", y.shape)
-
-    res = tf.reduce_sum(tf.math.pow(x - y, 2), 2)
-    print("Euclid result: ", res.shape)
-
-    return res
+    return tf.reduce_sum(tf.math.pow(x - y, 2), 2)
 
 
-class Experiment(object):
+class TrainEngine(object):
     def __init__(self, config):
         self.config = config
 
-    def train(self, loader, **kwargs):
+    def loss(self, support, query):
+        loss, acc = self.model(support, query)
+        return loss, acc
 
-        model = Prototypical()
+    def train(self, train_loader, val_loader, **kwargs):
+        self.model = Prototypical()
 
-        train_loss = tf.keras.metrics.Mean(name='train_loss')
-        acc_monitor = tf.keras.metrics.Mean(name='train_accuracy')
-        optimizer = tf.keras.optimizers.Adam(0.005)
+        train_loss = tf.metrics.Mean(name='train_loss')
+        val_loss = tf.metrics.Mean(name='val_loss')
+        train_acc = tf.metrics.Mean(name='train_accuracy')
+        val_acc = tf.metrics.Mean(name='val_accuracy')
+        optimizer = tf.keras.optimizers.Adam(self.config['train.lr'])
 
         @tf.function
         def train_step(support, query):
+            # Forward & update gradients
             with tf.GradientTape() as tape:
-                loss, acc = model(support, query)
-            gradients = tape.gradient(loss, model.trainable_variables)
-            print("Trainable parameters: ", model.trainable_variables)
+                loss, acc = self.loss(support, query)
+            gradients = tape.gradient(loss, self.model.trainable_variables)
             optimizer.apply_gradients(
-                zip(gradients, model.trainable_variables))
+                zip(gradients, self.model.trainable_variables))
 
+            # Log loss and accuracy for step
             train_loss(loss)
-            acc_monitor(acc)
+            train_acc(acc)
 
-            #train_accuracy(label, predictions)
-
-        # @tf.function
-        # def test_step(support, query):
-        #     predictions = model(support, query)
-        #     t_loss = loss_object(label, predictions)
-        #
-        #     test_loss(t_loss)
-        #     test_accuracy(label, predictions)
+        @tf.function
+        def val_step(support, query):
+            loss, acc = self.loss(support, query)
+            val_loss(loss)
+            val_acc(acc)
 
         n_episodes = self.config['data.train_episodes']
-        sss = 0
-        for episode in range(n_episodes):
-            for support, query in loader:
+        n_epochs = self.config['train.epochs']
+        for epoch in range(n_epochs):
+            for i_episode, (support, query) in enumerate(train_loader):
                 train_step(support, query)
-                #print("Step ", sss)
-                sss += 1
-                #break
-            # for test_image, test_label in test_loader:
-            #     test_step(test_image, test_label)
+                if i_episode+1 == n_episodes:
+                    break
+            for support, query in val_loader:
+                val_step(support, query)
 
-            #template = 'Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, Test Accuracy: {}'
-            template = 'Epoch {}, Loss: {}, Acc: {}'
-            print(template.format(episode + 1, train_loss.result(), acc_monitor.result()))
-                                  #test_loss.result(),
-                                  #test_accuracy.result() * 100))
+            template = 'Epoch {}, Loss: {}, Accuracy: {}, Val Loss: {}, Val Accuracy: {}'
+            print(template.format(epoch + 1, train_loss.result(), train_acc.result(),
+                                  val_loss.result(),
+                                  val_acc.result() * 100))
 
         print("Success!")
-
-        '''
-
-        # Losses and metrics monitors
-        
-        train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
-            name='train_accuracy')
-        test_loss = tf.keras.metrics.Mean(name='test_loss')
-        test_accuracy = tf.keras.metrics.SparseTopKCategoricalAccuracy(
-            name='test_accuracy')
-
-        '''
 
 
 def train(config):
     print("Config: ", config)
-    data_dir = '/home/igor/dl/prototypical-networks/data/omniglot'
-    ret = load(data_dir, config, ['train'])
-    img_ds = ret['train']
-    img_ds = img_ds.batch(60)#config['data.train_way'])
+    #data_dir = '/home/igor/dl/prototypical-networks/data/omniglot'
+    data_dir = '/Users/sirius/code/prototypical-networks-tf/data/omniglot'
+    ret = load(data_dir, config, ['train', 'val'])
+    train_loader = ret['train']
+    val_loader = ret['val']
 
-    experiment = Experiment(config)
-    with tf.device('/gpu:0'):
+    # Determine device
+    if config['data.cuda']:
+        device_name = 'GPU:0'
+    else:
+        device_name = 'CPU:0'
+
+    experiment = TrainEngine(config)
+    with tf.device(device_name):
         experiment.train(
             model=None,
-            loader=img_ds,
+            train_loader=train_loader,
+            val_loader=val_loader,
             optim_method=config['train.optim_method'],
             optim_config={'lr': config['train.lr'],
                           'weight_decay': config['train.weight_decay']},

@@ -125,6 +125,7 @@ def load_omniglot(data_dir, config, splits):
         class_paths_ds = tf.data.Dataset.zip(
             (class_paths_ds, img_paths_ds, rotates_ds))
         class_imgs_ds = class_paths_ds.map(load_class_images)
+        class_imgs_ds = class_imgs_ds.batch(n_way)
 
         ret[split] = class_imgs_ds
     return ret

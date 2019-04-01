@@ -12,7 +12,7 @@ default_n_support = 5
 default_test_n_support = 5
 default_n_query = 5
 default_test_n_query = default_n_query
-default_train_episodes = 100
+default_train_episodes = 2
 default_test_episodes = default_train_episodes
 
 # data
@@ -48,7 +48,7 @@ parser.add_argument("--model.z_dim", type=int, default=64,
                     help="dimensionality of input ")
 
 # training
-default_epochs = 10
+default_epochs = 1
 default_optim = 'Adam'
 default_lr = 0.001
 default_decay_every = 20
