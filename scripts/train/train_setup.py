@@ -82,7 +82,6 @@ def calc_euclidian_dists(x, y):
 
 class TrainEngine(object):
     def __init__(self, config):
-        self.config = config
         self.hooks = {name: lambda state: None
                       for name in ['on_start',
                                    'on_start_epoch',
@@ -91,64 +90,31 @@ class TrainEngine(object):
                                    'on_end_episode',
                                    'on_end']}
 
-    def loss(self, support, query):
-        loss, acc = self.model(support, query)
-        return loss, acc
-
-    def train(self, train_loader, val_loader, **kwargs):
-        self.model = Prototypical()
-        optimizer = tf.keras.optimizers.Adam(self.config['train.lr'])
-
-        train_loss = tf.metrics.Mean(name='train_loss')
-        val_loss = tf.metrics.Mean(name='val_loss')
-        train_acc = tf.metrics.Mean(name='train_accuracy')
-        val_acc = tf.metrics.Mean(name='val_accuracy')
+    def train(self, loss_func, train_loader, val_loader, epochs, n_episodes, **kwargs):
 
         state = {
-            'model': self.model,
+            'train_loader': train_loader,
+            'val_loader': val_loader,
+            'loss_func': loss_func,
+            'sample': None,
             'epoch': 1,
             'total_episode': 1,
+            'epochs': epochs,
+            'n_episodes': n_episodes
         }
 
-        @tf.function
-        def train_step(support, query):
-            # Forward & update gradients
-            with tf.GradientTape() as tape:
-                loss, acc = self.loss(support, query)
-            gradients = tape.gradient(loss, self.model.trainable_variables)
-            optimizer.apply_gradients(
-                zip(gradients, self.model.trainable_variables))
-
-            # Log loss and accuracy for step
-            train_loss(loss)
-            train_acc(acc)
-
-        @tf.function
-        def val_step(support, query):
-            loss, acc = self.loss(support, query)
-            val_loss(loss)
-            val_acc(acc)
-
-        n_episodes = self.config['data.train_episodes']
-        n_epochs = self.config['train.epochs']
         self.hooks['on_start'](state)
-        for epoch in range(n_epochs):
+        for epoch in range(state['epochs']):
             self.hooks['on_start_epoch'](state)
             for i_episode, (support, query) in enumerate(train_loader):
+                state['sample'] = (support, query)
                 self.hooks['on_start_episode'](state)
-                train_step(support, query)
-                if i_episode+1 == n_episodes:
+                if i_episode+1 == state['n_episodes']:
                     break
                 self.hooks['on_end_episode'](state)
                 state['total_episode'] += 1
-            for support, query in val_loader:
-                val_step(support, query)
 
-            template = 'Epoch {}, Loss: {}, Accuracy: {}, Val Loss: {}, Val Accuracy: {}'
-            print(template.format(epoch + 1, train_loss.result(), train_acc.result(),
-                                  val_loss.result(),
-                                  val_acc.result() * 100))
-            self.hooks['on_end_episode'](train)
+            self.hooks['on_end_episode'](state)
             state['epoch'] += 1
 
         self.hooks['on_end'](state)
@@ -168,6 +134,38 @@ def train(config):
         device_name = 'GPU:0'
     else:
         device_name = 'CPU:0'
+
+    # Setup training operations
+    model = Prototypical()
+    optimizer = tf.keras.optimizers.Adam(config['train.lr'])
+
+    train_loss = tf.metrics.Mean(name='train_loss')
+    val_loss = tf.metrics.Mean(name='val_loss')
+    train_acc = tf.metrics.Mean(name='train_accuracy')
+    val_acc = tf.metrics.Mean(name='val_accuracy')
+
+    def loss(support, query):
+        loss, acc = model(support, query)
+        return loss, acc
+
+    @tf.function
+    def train_step(loss_func, support, query):
+        # Forward & update gradients
+        with tf.GradientTape() as tape:
+            loss, acc = loss_func(support, query)
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(
+            zip(gradients, model.trainable_variables))
+
+        # Log loss and accuracy for step
+        train_loss(loss)
+        train_acc(acc)
+
+    @tf.function
+    def val_step(loss_func, support, query):
+        loss, acc = loss_func(support, query)
+        val_loss(loss)
+        val_acc(acc)
 
     train_engine = TrainEngine(config)
 
@@ -190,19 +188,30 @@ def train(config):
 
     def on_start_episode(state):
         print(f"Episode {state['total_episode']}")
+        support, query = state['sample']
+        loss_func = state['loss_func']
+        train_step(loss_func, support, query)
     train_engine.hooks['on_start_episode'] = on_start_episode
 
     def on_end_episode(state):
-        return None
+        # Validation
+        val_loader = state['val_loader']
+        loss_func = state['loss_func']
+        for support, query in val_loader:
+            val_step(loss_func, support, query)
+
+        epoch = state['epoch']
+        template = 'Epoch {}, Loss: {}, Accuracy: {}, Val Loss: {}, Val Accuracy: {}'
+        print(template.format(epoch + 1, train_loss.result(), train_acc.result(),
+                            val_loss.result(),
+                            val_acc.result() * 100))
+
     train_engine.hooks['on_end_episode'] = on_end_episode
 
     with tf.device(device_name):
         train_engine.train(
-            model=None,
+            loss_func=loss,
             train_loader=train_loader,
             val_loader=val_loader,
-            optim_method=config['train.optim_method'],
-            optim_config={'lr': config['train.lr'],
-                          'weight_decay': config['train.weight_decay']},
-            max_epoch=config['train.epochs']
-        )
+            epochs=config['train.epochs'],
+            n_episodes=config['data.train_episodes'])
