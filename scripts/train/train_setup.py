@@ -8,8 +8,7 @@ from prototf import TrainEngine
 
 def train(config):
     print("Config: ", config)
-    #data_dir = '/home/igor/dl/prototypical-networks/data/omniglot'
-    data_dir = '/Users/sirius/code/prototypical-networks-tf/data/omniglot'
+    data_dir = 'data/omniglot'
     ret = load(data_dir, config, ['train', 'val'])
     train_loader = ret['train']
     val_loader = ret['val']
@@ -21,7 +20,10 @@ def train(config):
         device_name = 'CPU:0'
 
     # Setup training operations
-    model = Prototypical()
+    n_support = config['data.train_n_support']
+    n_query = config['data.train_n_query']
+    w, h, c = list(map(int, config['model.x_dim'].split(',')))
+    model = Prototypical(n_support, n_query, w, h, c)
     optimizer = tf.keras.optimizers.Adam(config['train.lr'])
 
     train_loss = tf.metrics.Mean(name='train_loss')
@@ -66,6 +68,10 @@ def train(config):
 
     def on_start_epoch(state):
         print(f"Epoch {state['epoch']} started.")
+        train_loss.reset_states()
+        val_loss.reset_states()
+        train_acc.reset_states()
+        val_acc.reset_states()
     train_engine.hooks['on_start_epoch'] = on_start_epoch
 
     def on_end_epoch(state):
@@ -81,7 +87,7 @@ def train(config):
         if cur_loss < state['best_val_loss']:
             print("Saving new best model with loss: ", cur_loss)
             state['best_val_loss'] = cur_loss
-            model.save(config['train.save_path'])
+            model.save(config['train.model_path'])
         val_losses.append(cur_loss)
 
         # Early stopping
