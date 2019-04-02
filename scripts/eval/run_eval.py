@@ -6,7 +6,7 @@ parser = argparse.ArgumentParser(description='Run evaluation')
 
 default_ds = "omniglot"
 default_split = "vinyals"
-default_test_way = 60
+default_test_way = 5
 default_test_n_support = 5
 default_n_query = 5
 default_test_episodes = 10
