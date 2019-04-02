@@ -1,4 +1,4 @@
-# Prototypical Networks for Few-shot Learning in TensorFlow 2.0
+# Prototypical Networks for Few-shot in TensorFlow 2.0
 Implementation of Prototypical Networks for Few-shot Learning paper (https://arxiv.org/abs/1703.05175) in TensorFlow 2.0. The implementation is based on official PyTorch version from the author (https://github.com/jakesnell/prototypical-networks). Model has been tested on Omniglot and miniImagenet datasets with the same splitting as in the paper.
 
 <img width="896" alt="Screenshot 2019-04-02 at 9 53 06 AM" src="https://user-images.githubusercontent.com/23639048/55438102-5d9e4c00-55a9-11e9-86e2-b4f79f880b83.png">
