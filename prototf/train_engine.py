@@ -2,6 +2,10 @@ import numpy as np
 
 
 class TrainEngine(object):
+    """
+    Engine that launches training per epochs and episodes.
+    Contains hooks to perform certain actions when necessary.
+    """
     def __init__(self):
         self.hooks = {name: lambda state: None
                       for name in ['on_start',
@@ -12,7 +16,7 @@ class TrainEngine(object):
                                    'on_end']}
 
     def train(self, loss_func, train_loader, val_loader, epochs, n_episodes, **kwargs):
-
+        # State of the training procedure
         state = {
             'train_loader': train_loader,
             'val_loader': val_loader,
@@ -46,4 +50,4 @@ class TrainEngine(object):
                 break
 
         self.hooks['on_end'](state)
-        print("Success!")
+        print("Training succeed!")

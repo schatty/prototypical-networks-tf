@@ -1,3 +1,7 @@
+"""
+Logic for evaluation procedure of saved model.
+"""
+
 import tensorflow as tf
 
 from prototf.models import Prototypical
@@ -15,10 +19,12 @@ def eval(config):
     else:
         device_name = 'CPU:0'
 
+    # Load data from disk
     data_dir = 'data/omniglot'
     ret = load(data_dir, config, ['test'])
     test_loader = ret['test']
 
+    # Metrics to gather
     test_loss = tf.metrics.Mean(name='test_loss')
     test_acc = tf.metrics.Mean(name='test_accuracy')
 

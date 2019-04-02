@@ -6,10 +6,9 @@ parser = argparse.ArgumentParser(description='Run evaluation')
 
 default_ds = "omniglot"
 default_split = "vinyals"
-default_test_way = 50
+default_test_way = 60
 default_test_n_support = 5
 default_n_query = 5
-default_test_n_query = default_n_query
 default_test_episodes = 10
 
 # data
@@ -21,7 +20,7 @@ parser.add_argument("--data.test_way", type=int, default=default_test_way,
                     help=f"number of classes per episode in test.")
 parser.add_argument("--data.test_n_support", type=int, default=default_test_n_support,
                     help=f"number of support examples per class in test")
-parser.add_argument("--data.test_n_query", type=int, default=default_test_n_query,
+parser.add_argument("--data.test_n_query", type=int, default=default_n_query,
                     help=f"number of query examples per class in test")
 parser.add_argument("--data.test_episodes", type=int, default=default_test_episodes,
                     help=f"number of test episodes per epoch (default: {default_test_episodes}")

@@ -1,3 +1,8 @@
+"""
+Logic for model creation, training launching and actions needed to be
+accomplished during training (metrics monitor, model saving etc.)
+"""
+
 import numpy as np
 import tensorflow as tf
 
@@ -26,6 +31,7 @@ def train(config):
     model = Prototypical(n_support, n_query, w, h, c)
     optimizer = tf.keras.optimizers.Adam(config['train.lr'])
 
+    # Metrics to gather
     train_loss = tf.metrics.Mean(name='train_loss')
     val_loss = tf.metrics.Mean(name='val_loss')
     train_acc = tf.metrics.Mean(name='train_accuracy')
@@ -55,9 +61,10 @@ def train(config):
         val_loss(loss)
         val_acc(acc)
 
+    # Create empty training engine
     train_engine = TrainEngine()
 
-    # Set hooks on training process
+    # Set hooks on training engine
     def on_start(state):
         print("Training started.")
     train_engine.hooks['on_start'] = on_start
@@ -77,7 +84,8 @@ def train(config):
     def on_end_epoch(state):
         print(f"Epoch {state['epoch']} ended.")
         epoch = state['epoch']
-        template = 'Epoch {}, Loss: {}, Accuracy: {}, Val Loss: {}, Val Accuracy: {}'
+        template = 'Epoch {}, Loss: {}, Accuracy: {}, ' \
+                   'Val Loss: {}, Val Accuracy: {}'
         print(
             template.format(epoch + 1, train_loss.result(), train_acc.result(),
                             val_loss.result(),
@@ -98,7 +106,8 @@ def train(config):
     train_engine.hooks['on_end_epoch'] = on_end_epoch
 
     def on_start_episode(state):
-        print(f"Episode {state['total_episode']}")
+        if state['total_episode'] % 20 == 0:
+            print(f"Episode {state['total_episode']}")
         support, query = state['sample']
         loss_func = state['loss_func']
         train_step(loss_func, support, query)
@@ -110,7 +119,6 @@ def train(config):
         loss_func = state['loss_func']
         for support, query in val_loader:
             val_step(loss_func, support, query)
-
     train_engine.hooks['on_end_episode'] = on_end_episode
 
     with tf.device(device_name):
