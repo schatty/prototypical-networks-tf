@@ -3,8 +3,10 @@ Logic for model creation, training launching and actions needed to be
 accomplished during training (metrics monitor, model saving etc.)
 """
 
+import time
 import numpy as np
 import tensorflow as tf
+tf.config.gpu.set_per_process_memory_growth(True)
 
 from prototf.models import Prototypical
 from prototf.data import load
@@ -12,7 +14,9 @@ from prototf import TrainEngine
 
 
 def train(config):
-    print("Config: ", config)
+    np.random.seed(2019)
+    tf.random.set_seed(2019)
+
     data_dir = 'data/omniglot'
     ret = load(data_dir, config, ['train', 'val'])
     train_loader = ret['train']
@@ -38,6 +42,7 @@ def train(config):
     val_acc = tf.metrics.Mean(name='val_accuracy')
     val_losses = []
 
+    @tf.function
     def loss(support, query):
         loss, acc = model(support, query)
         return loss, acc
@@ -46,7 +51,7 @@ def train(config):
     def train_step(loss_func, support, query):
         # Forward & update gradients
         with tf.GradientTape() as tape:
-            loss, acc = loss_func(support, query)
+            loss, acc = model(support, query)
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(
             zip(gradients, model.trainable_variables))
@@ -101,7 +106,7 @@ def train(config):
         # Early stopping
         patience = config['train.patience']
         if len(val_losses) > patience \
-                and max(val_loss[-patience:]) == val_losses[-1]:
+                and max(val_losses[-patience:]) == val_losses[-1]:
             state['early_stopping_triggered'] = True
     train_engine.hooks['on_end_epoch'] = on_end_epoch
 
@@ -121,6 +126,7 @@ def train(config):
             val_step(loss_func, support, query)
     train_engine.hooks['on_end_episode'] = on_end_episode
 
+    time_start = time.time()
     with tf.device(device_name):
         train_engine.train(
             loss_func=loss,
@@ -128,3 +134,9 @@ def train(config):
             val_loader=val_loader,
             epochs=config['train.epochs'],
             n_episodes=config['data.train_episodes'])
+    time_end = time.time()
+
+    elapsed = time_end - time_start
+    h, min = elapsed//3600, elapsed%3600//60
+    sec = elapsed-min*60
+    print(f"Training took: {h} h {min} min {sec} sec")

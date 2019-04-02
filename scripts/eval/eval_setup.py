@@ -3,6 +3,7 @@ Logic for evaluation procedure of saved model.
 """
 
 import tensorflow as tf
+tf.config.gpu.set_per_process_memory_growth(True)
 
 from prototf.models import Prototypical
 from prototf.data import load
