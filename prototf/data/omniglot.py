@@ -1,12 +1,8 @@
 import os
-import sys
 import glob
-import random
-import pathlib
 from functools import partial
 
 import numpy as np
-from PIL import Image
 import tensorflow as tf
 
 
@@ -46,11 +42,8 @@ def load_and_preprocess_image(img_path, rot):
     return preprocess_image(image, rot)
 
 
-def load_class_images(class_name, img_paths, rot):
+def load_class_images(n_support, n_query, img_paths, rot):
     n_examples = img_paths.shape[0]
-
-    n_support = 5
-    n_query = 5
 
     example_inds = tf.range(n_examples)
     example_inds = tf.random.shuffle(example_inds)
@@ -86,28 +79,22 @@ def load_omniglot(data_dir, config, splits):
     ret = {}
     for split in splits:
         # n_way (number of classes per episode)
-        if split in ['val', 'test'] and config['data.test_way'] != 0:
+        if split in ['val', 'test']:
             n_way = config['data.test_way']
         else:
             n_way = config['data.train_way']
 
         # n_support (number of support examples per class)
-        if split in ['val', 'test'] and config['data.test_n_support'] != 0:
+        if split in ['val', 'test']:
             n_support = config['data.test_n_support']
         else:
             n_support = config['data.train_n_support']
 
         # n_query (number of query examples per class)
-        if split in ['val', 'test'] and config['data.test_n_query'] != 0:
+        if split in ['val', 'test']:
             n_query = config['data.test_n_query']
         else:
             n_query = config['data.train_n_query']
-
-        # n_episodes (number of episodes per epoch)
-        if split in ['val', 'test']:
-            n_episodes = config['data.test_episodes']
-        else:
-            n_episodes = config['data.train_episodes']
 
         class_names = []
         with open(os.path.join(split_dir, f"{split}.txt"), 'r') as f:
@@ -118,13 +105,12 @@ def load_omniglot(data_dir, config, splits):
         classes, img_paths, rotatess = get_class_images_paths(class_paths,
                                                               rotates)
 
-        class_paths_ds = tf.data.Dataset.from_tensor_slices(classes)
         img_paths_ds = tf.data.Dataset.from_tensor_slices(img_paths)
         rotates_ds = tf.data.Dataset.from_tensor_slices(rotatess)
 
-        class_paths_ds = tf.data.Dataset.zip(
-            (class_paths_ds, img_paths_ds, rotates_ds))
-        class_imgs_ds = class_paths_ds.map(load_class_images)
+        class_paths_ds = tf.data.Dataset.zip((img_paths_ds, rotates_ds))
+        class_imgs_ds = class_paths_ds.map(partial(load_class_images,
+                                                   n_support, n_query))
         class_imgs_ds = class_imgs_ds.batch(n_way)
 
         ret[split] = class_imgs_ds

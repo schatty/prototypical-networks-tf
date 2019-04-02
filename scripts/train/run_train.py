@@ -6,7 +6,7 @@ parser = argparse.ArgumentParser(description='Run training')
 
 default_ds = "omniglot"
 default_split = "vinyals"
-default_train_way = 50
+default_way = 50
 default_n_support = 5
 default_n_query = 5
 default_train_episodes = 2
@@ -16,12 +16,18 @@ parser.add_argument("--data.dataset", type=str, default=default_ds,
                     help=f"dataset name (default: {default_ds}")
 parser.add_argument("--data.split", type=str, default=default_split,
                     help=f"splitting name (default: {default_split}")
-parser.add_argument("--data.train_way", type=int, default=default_train_way,
-                    help=f"number of support classes: (default: {default_train_way})")
+parser.add_argument("--data.train_way", type=int, default=default_way,
+                    help=f"number of support classes: (default: {default_way})")
 parser.add_argument("--data.train_n_support", type=int, default=default_n_support,
                     help=f"number of support examples per class (default: {default_n_support})")
 parser.add_argument("--data.train_n_query", type=int, default=default_n_query,
                     help=f"number of query examples per class (default: {default_n_query})")
+parser.add_argument("--data.test_way", type=int, default=default_way,
+                    help=f"number of support classes in validation: (default: {default_way})")
+parser.add_argument("--data.test_n_support", type=int, default=default_n_support,
+                    help=f"number of support examples per class in validation (default: {default_n_support})")
+parser.add_argument("--data.test_n_query", type=int, default=default_n_query,
+                    help=f"number of query examples per class in validation (default: {default_n_query})")
 parser.add_argument("--data.train_episodes", type=int, default=default_train_episodes,
                     help=f"number of train episodes per epoch (default: {default_train_episodes})")
 parser.add_argument("--data.cuda", action='store_true',
