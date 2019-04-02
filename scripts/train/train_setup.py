@@ -71,6 +71,8 @@ class Prototypical(Model):
 
         return loss_mean, acc
 
+    def save(self, path):
+        self.encoder.save(path)
 
 def calc_euclidian_dists(x, y):
     n = x.shape[0]
@@ -100,7 +102,9 @@ class TrainEngine(object):
             'epoch': 1,
             'total_episode': 1,
             'epochs': epochs,
-            'n_episodes': n_episodes
+            'n_episodes': n_episodes,
+            'best_val_loss': np.inf,
+            'early_stopping_triggered': False
         }
 
         self.hooks['on_start'](state)
@@ -114,8 +118,13 @@ class TrainEngine(object):
                 self.hooks['on_end_episode'](state)
                 state['total_episode'] += 1
 
-            self.hooks['on_end_episode'](state)
+            self.hooks['on_end_epoch'](state)
             state['epoch'] += 1
+
+            # Early stopping
+            if state['early_stopping_triggered']:
+                print("Early stopping triggered!")
+                break
 
         self.hooks['on_end'](state)
         print("Success!")
@@ -143,6 +152,7 @@ def train(config):
     val_loss = tf.metrics.Mean(name='val_loss')
     train_acc = tf.metrics.Mean(name='train_accuracy')
     val_acc = tf.metrics.Mean(name='val_accuracy')
+    val_losses = []
 
     def loss(support, query):
         loss, acc = model(support, query)
@@ -184,6 +194,25 @@ def train(config):
 
     def on_end_epoch(state):
         print(f"Epoch {state['epoch']} ended.")
+        epoch = state['epoch']
+        template = 'Epoch {}, Loss: {}, Accuracy: {}, Val Loss: {}, Val Accuracy: {}'
+        print(
+            template.format(epoch + 1, train_loss.result(), train_acc.result(),
+                            val_loss.result(),
+                            val_acc.result() * 100))
+
+        cur_loss = val_loss.result().numpy()
+        if cur_loss < state['best_val_loss']:
+            print("Saving new best model with loss: ", cur_loss)
+            state['best_val_loss'] = cur_loss
+            model.save(config['train.save_path'])
+        val_losses.append(cur_loss)
+
+        # Early stopping
+        patience = config['train.patience']
+        if len(val_losses) > patience \
+                and max(val_loss[-patience:]) == val_losses[-1]:
+            state['early_stopping_triggered'] = True
     train_engine.hooks['on_end_epoch'] = on_end_epoch
 
     def on_start_episode(state):
@@ -199,12 +228,6 @@ def train(config):
         loss_func = state['loss_func']
         for support, query in val_loader:
             val_step(loss_func, support, query)
-
-        epoch = state['epoch']
-        template = 'Epoch {}, Loss: {}, Accuracy: {}, Val Loss: {}, Val Accuracy: {}'
-        print(template.format(epoch + 1, train_loss.result(), train_acc.result(),
-                            val_loss.result(),
-                            val_acc.result() * 100))
 
     train_engine.hooks['on_end_episode'] = on_end_episode
 

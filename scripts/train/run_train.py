@@ -48,7 +48,7 @@ parser.add_argument("--model.z_dim", type=int, default=64,
                     help="dimensionality of input ")
 
 # training
-default_epochs = 1
+default_epochs = 2
 default_optim = 'Adam'
 default_lr = 0.001
 default_decay_every = 20
@@ -67,6 +67,8 @@ parser.add_argument("--train.weight_decay", type=float, default=default_weight_d
                     help=f"weight decay (default: {default_weight_decay})")
 parser.add_argument("--train.patience", type=int, default=default_patience,
                     help=f"number of non-improving epochs after which training stops (default: {default_patience})")
+parser.add_argument("--train.save_path", type=str, default="./model",
+                    help="Path to the saved model (default: ./model)")
 
 # Run training
 args = vars(parser.parse_args())
