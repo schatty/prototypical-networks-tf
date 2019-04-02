@@ -7,6 +7,17 @@ import tensorflow as tf
 
 
 def dump_on_disk(data_dir, split, images):
+    """
+    Dump miniImagenet from np array to the .png files on disk.
+
+    Args:
+        data_dir (str): path to the directory where to dump
+        split (str): 'train'|'val'|'test'
+        images (np.ndarray): numpy representation of images
+
+    Returns: None
+
+    """
     split_path = os.path.join(data_dir, 'data', split)
     if not os.path.exists(split_path):
         os.makedirs(split_path)
@@ -139,7 +150,7 @@ def load_mini_imagenet(data_dir, config, splits):
                                      for k in dataset['class_dict']])
         image_paths_ds = tf.data.Dataset.from_tensor_slices(data)
         img_ds = image_paths_ds.map(partial(load_class_images, n_support, n_query))
-        imgs_ds = img_ds.shuffle(len(dataset['class_dict']))
+        img_ds = img_ds.shuffle(len(dataset['class_dict']))
         img_ds = img_ds.repeat()
         img_ds = img_ds.batch(n_way)
         ret[split] = img_ds

@@ -35,6 +35,8 @@ parser.add_argument("--data.train_episodes", type=int, default=default_train_epi
                     help=f"number of train episodes per epoch (default: {default_train_episodes})")
 parser.add_argument("--data.cuda", action='store_true',
                     help=f"Train on GPU (default: False)")
+parser.add_argument("--data.gpu", type=int, default=0,
+                    help="Default number of GPU for training with CUDA")
 
 # model
 default_input = "28,28,1"

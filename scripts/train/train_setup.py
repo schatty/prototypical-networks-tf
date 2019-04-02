@@ -24,7 +24,8 @@ def train(config):
 
     # Determine device
     if config['data.cuda']:
-        device_name = 'GPU:1'
+        cuda_num = config['data.gpu']
+        device_name = f'GPU:{cuda_num}'
     else:
         device_name = 'CPU:0'
 
