@@ -44,7 +44,7 @@ parser.add_argument("--model.z_dim", type=int, default=64,
                     help="dimensionality of input ")
 
 # training
-default_epochs = 1000
+default_epochs = 500
 default_optim = 'Adam'
 default_lr = 0.001
 default_patience = 200
@@ -57,8 +57,8 @@ parser.add_argument("--train.lr", type=float, default=default_lr,
                     help=f"learning rate (default: {default_lr})")
 parser.add_argument("--train.patience", type=int, default=default_patience,
                     help=f"number of non-improving epochs after which training stops (default: {default_patience})")
-parser.add_argument("--train.model_path", type=str, default="./model.h5",
-                    help="Path to the saved model (default: ./model.h5)")
+parser.add_argument("--train.model_path", type=str, default="./proto_model.h5",
+                    help="Path to the saved model (default: ./proto_model.h5)")
 
 # Run training
 args = vars(parser.parse_args())

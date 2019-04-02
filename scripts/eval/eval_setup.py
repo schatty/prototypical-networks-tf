@@ -10,8 +10,12 @@ from prototf.data import load
 
 
 def eval(config):
-    model = Prototypical(5, 5, 28, 28, 1)
-    model.load("model.h5")
+    n_support = config['data.test_n_support']
+    n_query = config['data.test_n_query']
+    w, h, c, = list(map(int, config['model.x_dim'].split(',')))
+    model = Prototypical(n_support, n_query, w, h, c)
+    model_path = f"{config['model.model_path']}"
+    model.load(model_path)
     print("Model loaded.")
 
     # Determine device
@@ -21,7 +25,7 @@ def eval(config):
         device_name = 'CPU:0'
 
     # Load data from disk
-    data_dir = 'data/omniglot'
+    data_dir = f"data/{config['data.dataset']}"
     ret = load(data_dir, config, ['test'])
     test_loader = ret['test']
 
@@ -35,7 +39,10 @@ def eval(config):
 
     with tf.device(device_name):
         for i_episode, (support, query) in enumerate(test_loader):
-            print("Episode: ", i_episode + 1)
+            if (i_episode+1)%50 == 0: 
+                print("Episode: ", i_episode + 1)
+            if (i_episode+1) == config['data.test_episodes']:
+                break
             loss, acc = calc_loss(support, query)
             test_loss(loss)
             test_acc(acc)

@@ -175,10 +175,12 @@ def load_omniglot(data_dir, config, splits):
         rotates_ds = tf.data.Dataset.from_tensor_slices(rotatess)
         class_paths_ds = tf.data.Dataset.zip((img_paths_ds, rotates_ds))
         # Convert three datasets above into one that outputs images of class
-        class_imgs_ds = class_paths_ds.map(partial(load_class_images,
+        imgs_ds = class_paths_ds.map(partial(load_class_images,
                                                    n_support, n_query))
         # Batch size is equal to way (number of classes per episode)
-        class_imgs_ds = class_imgs_ds.batch(n_way)
+        imgs_ds = imgs_ds.shuffle(len(class_names))
+        imgs_ds = imgs_ds.repeat()
+        imgs_ds = imgs_ds.batch(n_way)
 
-        ret[split] = class_imgs_ds
+        ret[split] = imgs_ds
     return ret

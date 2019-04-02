@@ -17,14 +17,14 @@ def train(config):
     np.random.seed(2019)
     tf.random.set_seed(2019)
 
-    data_dir = 'data/omniglot'
+    data_dir = f"data/{config['data.dataset']}"
     ret = load(data_dir, config, ['train', 'val'])
     train_loader = ret['train']
-    val_loader = ret['val']
+    val_loader = ret['val'] 
 
     # Determine device
     if config['data.cuda']:
-        device_name = 'GPU:0'
+        device_name = 'GPU:1'
     else:
         device_name = 'CPU:0'
 
@@ -92,7 +92,7 @@ def train(config):
         template = 'Epoch {}, Loss: {}, Accuracy: {}, ' \
                    'Val Loss: {}, Val Accuracy: {}'
         print(
-            template.format(epoch + 1, train_loss.result(), train_acc.result(),
+            template.format(epoch + 1, train_loss.result(), train_acc.result() * 100,
                             val_loss.result(),
                             val_acc.result() * 100))
 
@@ -122,7 +122,9 @@ def train(config):
         # Validation
         val_loader = state['val_loader']
         loss_func = state['loss_func']
-        for support, query in val_loader:
+        for i_episode, (support, query) in enumerate(val_loader):
+            if (i_episode+1) == config['data.train_episodes']:
+                break
             val_step(loss_func, support, query)
     train_engine.hooks['on_end_episode'] = on_end_episode
 

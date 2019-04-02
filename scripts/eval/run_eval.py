@@ -9,7 +9,7 @@ default_split = "vinyals"
 default_test_way = 5
 default_test_n_support = 5
 default_n_query = 5
-default_test_episodes = 10
+default_test_episodes = 1000
 
 # data
 parser.add_argument("--data.dataset", type=str, default=default_ds,
@@ -31,7 +31,7 @@ parser.add_argument("--data.cuda", action='store_true',
 default_input = "28,28,1"
 parser.add_argument("--model.x_dim", type=str, default=default_input,
                     help=f"dimensionality of input shapes (default: {default_input})")
-parser.add_argument("--train.model_path", type=str, default="./model.h5",
+parser.add_argument("--model.model_path", type=str, default="./model.h5",
                     help="Path to the saved model (default: ./model.h5)")
 
 # Run evaluation
