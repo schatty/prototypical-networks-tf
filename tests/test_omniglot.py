@@ -5,7 +5,6 @@ from scripts import train
 
 
 class TestsOmniglot(unittest.TestCase):
-
     def test_1_shot_1_way(self):
         config = {
             "data.dataset": "omniglot",
@@ -17,6 +16,7 @@ class TestsOmniglot(unittest.TestCase):
             "data.test_n_support": 1,
             "data.test_n_query": 1,
             "data.train_episodes": 10,
+            "data.test_episodes": 10,
             "data.cuda": False,
             "data.gpu": 0,
             "model.x_dim": "28,28,1",
@@ -41,6 +41,7 @@ class TestsOmniglot(unittest.TestCase):
             "data.test_n_support": 5,
             "data.test_n_query": 5,
             "data.train_episodes": 10,
+            "data.test_episodes": 10,
             "data.cuda": False,
             "data.gpu": 0,
             "model.x_dim": "28,28,1",
@@ -65,6 +66,7 @@ class TestsOmniglot(unittest.TestCase):
             "data.test_n_support": 10,
             "data.test_n_query": 10,
             "data.train_episodes": 10,
+            "data.test_episodes": 10,
             "data.cuda": False,
             "data.gpu": 0,
             "model.x_dim": "28,28,1",
@@ -89,6 +91,7 @@ class TestsOmniglot(unittest.TestCase):
             "data.test_n_support": 1,
             "data.test_n_query": 1,
             "data.train_episodes": 10,
+            "data.test_episodes": 10,
             "data.cuda": False,
             "data.gpu": 0,
             "model.x_dim": "28,28,1",

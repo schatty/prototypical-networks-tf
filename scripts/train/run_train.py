@@ -13,6 +13,7 @@ default_n_query = 5
 default_n_val_support = 5
 default_n_val_query = 15
 default_train_episodes = 100
+default_test_episodes = 100
 
 # data
 parser.add_argument("--data.dataset", type=str, default=default_ds,
@@ -33,6 +34,8 @@ parser.add_argument("--data.test_n_query", type=int, default=default_n_val_query
                     help=f"number of query examples per class in validation (default: {default_n_query})")
 parser.add_argument("--data.train_episodes", type=int, default=default_train_episodes,
                     help=f"number of train episodes per epoch (default: {default_train_episodes})")
+parser.add_argument("--data.test_episodes", type=int, default=default_test_episodes,
+                    help=f"number of test episodes per epoch (default: {default_test_episodes})")
 parser.add_argument("--data.cuda", action='store_true',
                     help=f"Train on GPU (default: False)")
 parser.add_argument("--data.gpu", type=int, default=0,

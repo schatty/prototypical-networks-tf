@@ -33,11 +33,9 @@ class TrainEngine(object):
         self.hooks['on_start'](state)
         for epoch in range(state['epochs']):
             self.hooks['on_start_epoch'](state)
-            for i_episode, (support, query) in enumerate(train_loader):
+            for support, query in train_loader:
                 state['sample'] = (support, query)
                 self.hooks['on_start_episode'](state)
-                if i_episode+1 == state['n_episodes']:
-                    break
                 self.hooks['on_end_episode'](state)
                 state['total_episode'] += 1
 

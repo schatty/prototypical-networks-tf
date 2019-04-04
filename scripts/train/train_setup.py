@@ -123,9 +123,7 @@ def train(config):
         # Validation
         val_loader = state['val_loader']
         loss_func = state['loss_func']
-        for i_episode, (support, query) in enumerate(val_loader):
-            if (i_episode+1) == config['data.train_episodes']:
-                break
+        for support, query in val_loader:
             val_step(loss_func, support, query)
     train_engine.hooks['on_end_episode'] = on_end_episode
 
