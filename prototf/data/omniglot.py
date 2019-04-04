@@ -3,6 +3,7 @@ import glob
 from functools import partial
 import numpy as np
 import tensorflow as tf
+from PIL import Image
 
 
 def class_names_to_paths(data_dir, class_names):
@@ -49,25 +50,7 @@ def get_class_images_paths(dir_paths, rotates):
     return classes, img_paths, rotates_list
 
 
-def preprocess_image(img):
-    """
-    Preprocess single image.
-
-    Args:
-        img (Tensor of type string): image readed by tensorflow
-
-    Returns (Tensor of type tf.float32):
-
-    """
-    image = tf.image.decode_png(img, channels=1)
-    image = tf.cast(image, tf.float32)
-    image = tf.image.resize(image, (28, 28))
-    image /= 255.0
-    image = 1-image
-    return image
-
-
-def load_and_preprocess_image(img_path):
+def load_and_preprocess_image(img_path, rot):
     """
     Load and return preprocessed image.
 
@@ -77,51 +60,28 @@ def load_and_preprocess_image(img_path):
     Returns (Tensor): preprocessed image
 
     """
-    image = tf.io.read_file(img_path)
-    return preprocess_image(image)
+    img = Image.open(img_path).resize((28, 28)).rotate(rot)
+    img = np.asarray(img, dtype=np.float32)
+    img /= 255.0
+    img = 1 - img
+    return np.expand_dims(img, -1)
 
 
-def gen_episode(class_inds, img_paths, rotates, n_way, n_episodes,
-                n_support, n_query):
-    for i in range(n_episodes):
-        np.random.shuffle(class_inds)
-        class_way_inds = class_inds[:n_way]
+def load_episode(inds, data, n_way, n_support, n_query):
+    inds = tf.range(data.shape[0])
+    inds = tf.random.shuffle(inds)
+    class_way_inds = tf.gather(inds, tf.range(n_way))
 
-        way_support_shots = []
-        way_query_shots = []
-        # Build support dataset
-        for i_class in class_way_inds:
-            img_class_paths = img_paths[i_class]
-            img_inds = np.arange(len(img_class_paths))
-            np.random.shuffle(img_inds)
-            support_inds = img_inds[:n_support]
-            query_inds = img_inds[n_support:n_support + n_query]
+    class_img = tf.gather(data, class_way_inds)
 
-            support_imgs = []
-            for i in support_inds:
-                img = load_and_preprocess_image(img_class_paths[i])
-                support_imgs.append(tf.expand_dims(img, 0))
-            ds_support = tf.concat(support_imgs, axis=0)
-            # Rotate dataset by given angle
-            ds_support = tf.image.rot90(ds_support,
-                                        k=rotates[i_class] // 90)
-            way_support_shots.append(tf.expand_dims(ds_support, 0))
+    shot_inds = tf.random.shuffle(tf.range(data.shape[1]))
+    support_inds = tf.gather(shot_inds, tf.range(n_support))
+    query_inds = tf.gather(shot_inds, tf.range(n_support, n_support+n_query))
 
-            # Query dataset
-            query_imgs = []
-            for i in query_inds:
-                img = load_and_preprocess_image(img_class_paths[i])
-                query_imgs.append(tf.expand_dims(img, 0))
-            ds_query = tf.concat(query_imgs, axis=0)
-            # Rotate dataset by given angle
-            ds_query = tf.image.rot90(ds_query,
-                                      k=rotates[i_class] // 90)
-            way_query_shots.append(tf.expand_dims(ds_query, 0))
+    support = tf.gather(class_img, support_inds, axis=1)
+    query = tf.gather(class_img, query_inds, axis=1)
 
-        way_support_shots = tf.concat(way_support_shots, axis=0)
-        way_query_shots = tf.concat(way_query_shots, axis=0)
-
-        yield way_support_shots, way_query_shots
+    return support, query
 
 
 def load_omniglot(data_dir, config, splits):
@@ -175,17 +135,31 @@ def load_omniglot(data_dir, config, splits):
         classes, img_paths, rotates = get_class_images_paths(class_paths,
                                                               rotates)
 
-        class_inds = np.arange(len(class_names))
-        imgs_ds = tf.data.Dataset.from_generator(partial(gen_episode,
-                                                         class_inds,
-                                                         img_paths,
-                                                         rotates,
-                                                         n_way,
-                                                         n_episodes,
-                                                         n_support,
-                                                         n_query),
-                                                 (tf.float32, tf.float32),
-                                                 (tf.TensorShape([n_way, n_support, w, h, c]),
-                                                  tf.TensorShape([n_way, n_query, w, h, c])))
-        ret[split] = imgs_ds
+        classes, img_paths, rotates = classes[:100], img_paths[:100], rotates[:100]
+        data = np.zeros([len(classes), len(img_paths[0]), w, h, c])
+        for i_class in range(len(classes)):
+            for i_img  in range(len(img_paths[i_class])):
+                data[i_class, i_img, :, :, :] = load_and_preprocess_image(img_paths[i_class][i_img], rotates[i_class])
+
+        data = tf.constant(data, dtype=tf.float32)
+        img_ds = tf.data.Dataset.from_tensor_slices(np.arange(n_way))
+        img_ds = img_ds.map(partial(load_episode, data=data, n_way=n_way, n_support=n_support, n_query=n_query))
+        ret[split] = img_ds
     return ret
+
+
+
+if __name__ == "__main__":
+    config = {
+        'data.train_way': 13,
+        'data.test_way': 13,
+        'data.train_n_query': 5,
+        'data.train_n_support': 5,
+        'data.test_n_query': 5,
+        'data.test_n_support': 5,
+        'data.train_episodes': 10,
+        'data.test_episodes': 10,
+        'data.split': 'vinyals',
+        'model.x_dim': '28,28,1'
+    }
+    load_omniglot('data/omniglot', config, ['test'])
