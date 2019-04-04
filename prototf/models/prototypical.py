@@ -133,5 +133,5 @@ class Prototypical(Model):
         Returns: None
 
         """
-        self.encoder(tf.zeros([1, self.w, self.h, self.c]))
+        self.encoder(tf.zeros([1, self.w, self.h, self.c], dtype=np.float16))
         self.encoder.load_weights(model_path)

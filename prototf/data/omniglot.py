@@ -62,7 +62,7 @@ def load_and_preprocess_image(img_path, rot):
     """
     img = Image.open(img_path).resize((28, 28)).rotate(rot)
     img = np.asarray(img, dtype=np.float32)
-    img /= 255.0
+    #img /= 255.0
     img = 1 - img
     return np.expand_dims(img, -1)
 
@@ -77,7 +77,7 @@ def load_episode(inds, data, n_way, n_support, n_query):
     shot_inds = tf.random.shuffle(tf.range(data.shape[1]))
     support_inds = tf.gather(shot_inds, tf.range(n_support))
     query_inds = tf.gather(shot_inds, tf.range(n_support, n_support+n_query))
-
+    print("SUPPORT: ", support_inds)
     support = tf.gather(class_img, support_inds, axis=1)
     query = tf.gather(class_img, query_inds, axis=1)
 
@@ -135,14 +135,13 @@ def load_omniglot(data_dir, config, splits):
         classes, img_paths, rotates = get_class_images_paths(class_paths,
                                                               rotates)
 
-        classes, img_paths, rotates = classes[:100], img_paths[:100], rotates[:100]
         data = np.zeros([len(classes), len(img_paths[0]), w, h, c])
         for i_class in range(len(classes)):
             for i_img  in range(len(img_paths[i_class])):
                 data[i_class, i_img, :, :, :] = load_and_preprocess_image(img_paths[i_class][i_img], rotates[i_class])
 
         data = tf.constant(data, dtype=tf.float32)
-        img_ds = tf.data.Dataset.from_tensor_slices(np.arange(n_way))
+        img_ds = tf.data.Dataset.from_tensor_slices(np.arange(n_episodes))
         img_ds = img_ds.map(partial(load_episode, data=data, n_way=n_way, n_support=n_support, n_query=n_query))
         ret[split] = img_ds
     return ret

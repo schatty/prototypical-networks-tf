@@ -60,10 +60,14 @@ def load_mini_imagenet(data_dir, config, splits):
                                    f'mini-imagenet-cache-{split}.pkl')
         # load dict with 'class_dict' and 'image_data' keys
         with open(ds_filename, 'rb') as f:
-            data = pickle.load(f)
-        print("DATA SHAPE: ", data.shape)
-        data = tf.constant(data / 255., dtype=tf.float32)
-        img_ds = tf.data.Dataset.from_tensor_slices(np.arange(n_way))
+            data_dict = pickle.load(f)
+        # Convert original data to format [n_classes, n_img, w, h, c]
+        first_key = list(data_dict['class_dict'])[0]
+        data = np.zeros((len(data_dict['class_dict']), len(data_dict['class_dict'][first_key]), 84, 84, 3))
+        for i, (k, v) in enumerate(data_dict['class_dict'].items()):
+                data[i, :, :, :, :] = data_dict['image_data'][v, :]
+        data = tf.constant(data / 255., dtype=tf.float16)
+        img_ds = tf.data.Dataset.from_tensor_slices(np.arange(n_support, dtype=np.float16))
         img_ds = img_ds.map(
             partial(load_episode, data=data, n_way=n_way, n_support=n_support,
                     n_query=n_query))
