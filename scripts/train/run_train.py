@@ -11,7 +11,7 @@ default_test_way = 5
 default_n_support = 5
 default_n_query = 5
 default_n_val_support = 5
-default_n_val_query = 15
+default_n_val_query = 5
 default_train_episodes = 100
 
 # data

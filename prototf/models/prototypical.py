@@ -20,7 +20,7 @@ def calc_euclidian_dists(x, y):
     m = y.shape[0]
     x = tf.tile(tf.expand_dims(x, 1), [1, m, 1])
     y = tf.tile(tf.expand_dims(y, 0), [n, 1, 1])
-    return tf.reduce_sum(tf.math.pow(x - y, 2), 2)
+    return tf.reduce_mean(tf.math.pow(x - y, 2), 2)
 
 
 class Prototypical(Model):
@@ -66,6 +66,8 @@ class Prototypical(Model):
         n_class = support.shape[0]
         n_support = support.shape[1]
         n_query = query.shape[1]
+        y = np.tile(np.arange(n_class)[:, np.newaxis], (1, n_query))
+        y_onehot = tf.cast(tf.one_hot(y, n_class), tf.float32)
 
         # correct indices of support samples (just natural order)
         target_inds = tf.reshape(tf.range(n_class), [n_class, 1])
@@ -92,24 +94,13 @@ class Prototypical(Model):
         # log softmax of calculated distances
         log_p_y = tf.nn.log_softmax(-dists, axis=-1)
         log_p_y = tf.reshape(log_p_y, [n_class, n_query, -1])
-
-        # loss is the mean of softmax predictions of actual classes
-        inds = [[i, i // n_query]
-                for i in list(range(n_class * n_query))]
-        loss = -tf.gather_nd(tf.reshape(log_p_y,
-                                        [n_class * n_query, -1]),
-                             inds)
-        loss = tf.reshape(loss, [n_class, n_query])
-        loss_mean = tf.reduce_mean(loss)
-
-        # Get accuracy
-        y_pred = tf.math.argmax(log_p_y, axis=2)
-        eq = tf.math.equal(tf.cast(y_pred, tf.int32),
-                           tf.cast(target_inds, tf.int32))
-        eq = tf.cast(eq, np.int32)
-        acc = tf.reduce_sum(eq) / (n_class * n_query)
-
-        return loss_mean, acc
+        
+        loss = -tf.reduce_mean(tf.reshape(tf.reduce_sum(tf.multiply(y_onehot, log_p_y), axis=-1), [-1]))
+        eq = tf.cast(tf.equal(
+            tf.cast(tf.argmax(log_p_y, axis=-1), tf.int32), 
+            tf.cast(y, tf.int32)), tf.float32)
+        acc = tf.reduce_mean(eq)
+        return loss, acc
 
     def save(self, model_path):
         """
