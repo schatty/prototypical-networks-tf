@@ -3,6 +3,29 @@ import glob
 from functools import partial
 import numpy as np
 import tensorflow as tf
+from PIL import Image
+
+
+class DataLoader(object):
+    def __init__(self, data, n_classes, n_way, n_support, n_query):
+        self.data = data
+        self.n_way = n_way
+        self.n_classes = n_classes
+        self.n_support = n_support
+        self.n_query = n_query
+
+    def get_next_episode(self):
+        n_examples = 20
+        support = np.zeros([self.n_way, self.n_support, 28, 28, 1], dtype=np.float32)
+        query = np.zeros([self.n_way, self.n_query, 28, 28, 1], dtype=np.float32)
+        classes_ep = np.random.permutation(self.n_classes)[:self.n_way]
+
+        for i, i_class in enumerate(classes_ep):
+            selected = np.random.permutation(n_examples)[:self.n_support + self.n_query]
+            support[i] = self.data[i_class, selected[:self.n_support]]
+            query[i] = self.data[i_class, selected[self.n_query:]]
+
+        return support, query
 
 
 def class_names_to_paths(data_dir, class_names):
@@ -49,36 +72,17 @@ def get_class_images_paths(dir_paths, rotates):
     return classes, img_paths, rotates_list
 
 
-def preprocess_image(img):
-    """
-    Preprocess single image.
-
-    Args:
-        img (Tensor of type string): image readed by tensorflow
-
-    Returns (Tensor of type tf.float32):
-
-    """
-    image = tf.image.decode_png(img, channels=1)
-    image = tf.cast(image, tf.float32)
-    image = tf.image.resize(image, (28, 28))
-    image /= 255.0
-    image = 1-image
-    return image
-
-
-def load_and_preprocess_image(img_path):
+def load_and_preprocess_image(img_path, rot):
     """
     Load and return preprocessed image.
-
     Args:
         img_path (str): path to the image on disk.
-
     Returns (Tensor): preprocessed image
-
     """
-    image = tf.io.read_file(img_path)
-    return preprocess_image(image)
+    img = Image.open(img_path).resize((28, 28)).rotate(rot)
+    img = np.asarray(img)
+    img = 1 - img
+    return np.expand_dims(img, -1)
 
 
 def load_class_images(n_support, n_query, img_paths, rot):
@@ -166,21 +170,23 @@ def load_omniglot(data_dir, config, splits):
                 class_names.append(class_name.rstrip('\n'))
 
         # Get class names, images paths and rotation angles per each class
-        class_paths, rotates = class_names_to_paths(data_dir, class_names)
-        classes, img_paths, rotatess = get_class_images_paths(class_paths,
-                                                              rotates)
+        class_paths, rotates = class_names_to_paths(data_dir,
+                                                    class_names)
+        classes, img_paths, rotates = get_class_images_paths(
+            class_paths,
+            rotates)
 
-        # Construct tf datasets for class names, img paths and rotates
-        img_paths_ds = tf.data.Dataset.from_tensor_slices(img_paths)
-        rotates_ds = tf.data.Dataset.from_tensor_slices(rotatess)
-        class_paths_ds = tf.data.Dataset.zip((img_paths_ds, rotates_ds))
-        # Convert three datasets above into one that outputs images of class
-        imgs_ds = class_paths_ds.map(partial(load_class_images,
-                                                   n_support, n_query))
-        # Batch size is equal to way (number of classes per episode)
-        imgs_ds = imgs_ds.shuffle(len(class_names))
-        imgs_ds = imgs_ds.repeat()
-        imgs_ds = imgs_ds.batch(n_way)
+        data = np.zeros([len(classes), len(img_paths[0]), 28, 28, 1])
+        for i_class in range(len(classes)):
+            for i_img in range(len(img_paths[i_class])):
+                data[i_class, i_img, :, :,:] = load_and_preprocess_image(
+                            img_paths[i_class][i_img], rotates[i_class])
 
-        ret[split] = imgs_ds
+        data_loader = DataLoader(data,
+                                 n_classes=len(classes),
+                                 n_way=n_way,
+                                 n_support=n_support,
+                                 n_query=n_query)
+
+        ret[split] = data_loader
     return ret

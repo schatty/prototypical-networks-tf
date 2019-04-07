@@ -46,7 +46,7 @@ parser.add_argument("--model.z_dim", type=int, default=64,
                     help="dimensionality of input ")
 
 # training
-default_epochs = 500
+default_epochs = 20
 default_optim = 'Adam'
 default_lr = 0.001
 default_patience = 200

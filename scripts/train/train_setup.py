@@ -20,7 +20,7 @@ def train(config):
     data_dir = f"data/{config['data.dataset']}"
     ret = load(data_dir, config, ['train', 'val'])
     train_loader = ret['train']
-    val_loader = ret['val'] 
+    val_loader = ret['val']
 
     # Determine device
     if config['data.cuda']:
@@ -123,9 +123,8 @@ def train(config):
         # Validation
         val_loader = state['val_loader']
         loss_func = state['loss_func']
-        for i_episode, (support, query) in enumerate(val_loader):
-            if (i_episode+1) == config['data.train_episodes']:
-                break
+        for i_episode in range(config['data.train_episodes']):
+            support, query = val_loader.get_next_episode()
             val_step(loss_func, support, query)
     train_engine.hooks['on_end_episode'] = on_end_episode
 
