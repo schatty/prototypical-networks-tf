@@ -22,7 +22,7 @@ class DataLoader(object):
         for i, i_class in enumerate(classes_ep):
             selected = np.random.permutation(n_examples)[:self.n_support + self.n_query]
             support[i] = self.data[i_class, selected[:self.n_support]]
-            query[i] = self.data[i_class, selected[self.n_query:]]
+            query[i] = self.data[i_class, selected[self.n_support:]]
 
         return support, query
 

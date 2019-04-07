@@ -5,56 +5,26 @@ from PIL import Image
 from functools import partial
 import tensorflow as tf
 
+class DataLoader(object):
+    def __init__(self, data, n_classes, n_way, n_support, n_query):
+        self.data = data
+        self.n_way = n_way
+        self.n_classes = n_classes
+        self.n_support = n_support
+        self.n_query = n_query
 
-def dump_on_disk(data_dir, split, images):
-    """
-    Dump miniImagenet from np array to the .png files on disk.
+    def get_next_episode(self):
+        n_examples = self.data.shape[1]
+        support = np.zeros([self.n_way, self.n_support, 84, 84, 3], dtype=np.float32)
+        query = np.zeros([self.n_way, self.n_query, 84, 84, 3], dtype=np.float32)
+        classes_ep = np.random.permutation(self.n_classes)[:self.n_way]
 
-    Args:
-        data_dir (str): path to the directory where to dump
-        split (str): 'train'|'val'|'test'
-        images (np.ndarray): numpy representation of images
+        for i, i_class in enumerate(classes_ep):
+            selected = np.random.permutation(n_examples)[:self.n_support + self.n_query]
+            support[i] = self.data[i_class, selected[:self.n_support]]
+            query[i] = self.data[i_class, selected[self.n_support:]]
 
-    Returns: None
-
-    """
-    split_path = os.path.join(data_dir, 'data', split)
-    if not os.path.exists(split_path):
-        os.makedirs(split_path)
-    for i, img in enumerate(images):
-        img_pillow = Image.fromarray(img)
-        img_pillow.save(f"{split_path}/{i}.png", "PNG")
-
-
-def preprocess_image(img):
-    """
-    Preprocess single image.
-
-    Args:
-        img (Tensor of type string): image readed by tensorflow
-
-    Returns (Tensor of type tf.float32):
-
-    """
-    img = tf.image.decode_png(img, channels=3)
-    img = tf.cast(img, tf.float32)
-    img = tf.image.resize(img, (84, 84))
-    img /= 255.0
-    return img
-
-
-def load_and_preprocess_image(img_path):
-    """
-    Load and return preprocessed image.
-
-    Args:
-        img_path (str): path to the image on disk.
-
-    Returns (Tensor): preprocessed image
-
-    """
-    image = tf.io.read_file(img_path)
-    return preprocess_image(image)
+        return support, query
 
 
 def load_class_images(n_support, n_query, img_paths):
@@ -121,38 +91,30 @@ def load_mini_imagenet(data_dir, config, splits):
 
         # n_support (number of support examples per class)
         if split in ['val', 'test']:
-            n_support = config['data.test_n_support']
+            n_support = config['data.test_support']
         else:
-            n_support = config['data.train_n_support']
+            n_support = config['data.train_support']
 
         # n_query (number of query examples per class)
         if split in ['val', 'test']:
-            n_query = config['data.test_n_query']
+            n_query = config['data.test_query']
         else:
-            n_query = config['data.train_n_query']
+            n_query = config['data.train_query']
 
         # Load images as numpy
         ds_filename = os.path.join(data_dir, 'data',
                                    f'mini-imagenet-cache-{split}.pkl')
         # load dict with 'class_dict' and 'image_data' keys
         with open(ds_filename, 'rb') as f:
-            dataset = pickle.load(f)
-        images = [dataset['image_data'][i, :] for i in range(len(dataset['image_data']))]
+            data_dict = pickle.load(f)
         
-        split_path = os.path.join(data_dir, 'data', split)
-        if not os.path.exists(split_path):
-            print(f"Dumping on {split} disk")
-            dump_on_disk(data_dir, split, images)
-        else:
-            print("Path existing")
-        
-        data = np.array([[f"{split_path}/{v}.png" for v in dataset['class_dict'][k]] 
-                                     for k in dataset['class_dict']])
-        image_paths_ds = tf.data.Dataset.from_tensor_slices(data)
-        img_ds = image_paths_ds.map(partial(load_class_images, n_support, n_query))
-        img_ds = img_ds.shuffle(len(dataset['class_dict']))
-        img_ds = img_ds.repeat()
-        img_ds = img_ds.batch(n_way)
-        ret[split] = img_ds
+        # Convert original data to format [n_classes, n_img, w, h, c]
+        first_key = list(data_dict['class_dict'])[0]
+        data = np.zeros((len(data_dict['class_dict']), len(data_dict['class_dict'][first_key]), 84, 84, 3))
+        for i, (k, v) in enumerate(data_dict['class_dict'].items()):
+            data[i, :, :, :, :] = data_dict['image_data'][v, :]
+
+        data_loader = DataLoader(data, data.shape[0], n_way, n_support, n_query)
+        ret[split] = data_loader
 
     return ret

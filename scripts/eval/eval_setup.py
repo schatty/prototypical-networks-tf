@@ -39,7 +39,7 @@ def eval(config):
         return loss, acc
 
     with tf.device(device_name):
-        for i_episode in range(config['data.test_episodes']):
+        for i_episode in range(config['data.episodes']):
             support, query = test_loader.get_next_episode()
             if (i_episode+1)%50 == 0: 
                 print("Episode: ", i_episode + 1)
