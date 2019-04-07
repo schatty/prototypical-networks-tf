@@ -1,6 +1,5 @@
 import os
 import glob
-from functools import partial
 import numpy as np
 import tensorflow as tf
 from PIL import Image
@@ -153,15 +152,15 @@ def load_omniglot(data_dir, config, splits):
 
         # n_support (number of support examples per class)
         if split in ['val', 'test']:
-            n_support = config['data.test_n_support']
+            n_support = config['data.test_support']
         else:
-            n_support = config['data.train_n_support']
+            n_support = config['data.train_support']
 
         # n_query (number of query examples per class)
         if split in ['val', 'test']:
-            n_query = config['data.test_n_query']
+            n_query = config['data.test_query']
         else:
-            n_query = config['data.train_n_query']
+            n_query = config['data.train_query']
 
         # Get all class names
         class_names = []

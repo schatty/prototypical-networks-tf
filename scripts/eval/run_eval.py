@@ -1,41 +1,37 @@
 import argparse
+import configparser
 
 from eval_setup import eval
 
 parser = argparse.ArgumentParser(description='Run evaluation')
 
-default_ds = "omniglot"
-default_split = "vinyals"
-default_test_way = 5
-default_test_n_support = 5
-default_n_query = 5
-default_test_episodes = 1000
 
-# data
-parser.add_argument("--data.dataset", type=str, default=default_ds,
-                    help=f"dataset name (default: {default_ds}")
-parser.add_argument("--data.split", type=str, default=default_split,
-                    help=f"splitting name (default: {default_split}")
-parser.add_argument("--data.test_way", type=int, default=default_test_way,
-                    help=f"number of classes per episode in test.")
-parser.add_argument("--data.test_n_support", type=int, default=default_test_n_support,
-                    help=f"number of support examples per class in test")
-parser.add_argument("--data.test_n_query", type=int, default=default_n_query,
-                    help=f"number of query examples per class in test")
-parser.add_argument("--data.test_episodes", type=int, default=default_test_episodes,
-                    help=f"number of test episodes per epoch (default: {default_test_episodes}")
-parser.add_argument("--data.cuda", action='store_true',
-                    help=f"Train on GPU (default: False)")
-parser.add_argument("--data.gpu", type=int, default=0,
-                    help="Default number of GPU for training with CUDA")
+def preprocess_config(c):
+    conf_dict = {}
+    int_params = ['data.train_way', 'data.test_way', 'data.train_support',
+                      'data.test_support', 'data.train_query', 'data.test_query',
+                      'data.query', 'data.support', 'data.way', 'data.episodes',
+                      'data.gpu', 'data.cuda', 'model.z_dim', 'train.epochs',
+                      'train.patience']
+    float_params = ['train.lr']
+    for param in c:
+        if param in int_params:
+            conf_dict[param] = int(c[param])
+        elif param in float_params:
+            conf_dict[param] = float(c[param])
+        else:
+            conf_dict[param] = c[param]
+    return conf_dict
 
-# model
-default_input = "28,28,1"
-parser.add_argument("--model.x_dim", type=str, default=default_input,
-                    help=f"dimensionality of input shapes (default: {default_input})")
-parser.add_argument("--model.model_path", type=str, default="./model.h5",
-                    help="Path to the saved model (default: ./model.h5)")
 
-# Run evaluation
+parser = argparse.ArgumentParser(description='Run evaluation')
+parser.add_argument("--config", type=str, default="./scripts/config_omniglot.conf",
+                    help="Path to the config file.")
+
+# Run training
 args = vars(parser.parse_args())
-eval(args)
+config = configparser.ConfigParser()
+config.read(args['config'])
+config = preprocess_config(config['EVAL'])
+eval(config)
+

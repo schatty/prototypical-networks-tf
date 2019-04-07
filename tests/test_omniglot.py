@@ -3,6 +3,7 @@ import unittest
 
 from scripts import train
 
+cuda_on = 1
 
 class TestsOmniglot(unittest.TestCase):
 
@@ -11,13 +12,13 @@ class TestsOmniglot(unittest.TestCase):
             "data.dataset": "omniglot",
             "data.split": "vinyals",
             "data.train_way": 1,
-            "data.train_n_support": 1,
-            "data.train_n_query": 1,
+            "data.train_support": 1,
+            "data.train_query": 1,
             "data.test_way": 1,
-            "data.test_n_support": 1,
-            "data.test_n_query": 1,
-            "data.train_episodes": 10,
-            "data.cuda": False,
+            "data.test_support": 1,
+            "data.test_query": 1,
+            "data.episodes": 10,
+            "data.cuda": cuda_on,
             "data.gpu": 0,
             "model.x_dim": "28,28,1",
             "model.z_dim": 64,
@@ -25,7 +26,7 @@ class TestsOmniglot(unittest.TestCase):
             'train.optim_method': "Adam",
             "train.lr": 0.001,
             "train.patience": 5,
-            "train.model_path": 'test_omniglot.h5'
+            "model.save_path": 'test_omniglot.h5'
         }
         train(config)
         os.remove('test_omniglot.h5')
@@ -35,13 +36,13 @@ class TestsOmniglot(unittest.TestCase):
             "data.dataset": "omniglot",
             "data.split": "vinyals",
             "data.train_way": 5,
-            "data.train_n_support": 5,
-            "data.train_n_query": 5,
+            "data.train_support": 5,
+            "data.train_query": 5,
             "data.test_way": 5,
-            "data.test_n_support": 5,
-            "data.test_n_query": 5,
-            "data.train_episodes": 10,
-            "data.cuda": False,
+            "data.test_support": 5,
+            "data.test_query": 5,
+            "data.episodes": 10,
+            "data.cuda": cuda_on,
             "data.gpu": 0,
             "model.x_dim": "28,28,1",
             "model.z_dim": 64,
@@ -49,7 +50,7 @@ class TestsOmniglot(unittest.TestCase):
             'train.optim_method': "Adam",
             "train.lr": 0.001,
             "train.patience": 5,
-            "train.model_path": 'test_omniglot.h5'
+            "model.save_path": 'test_omniglot.h5'
         }
         train(config)
         os.remove('test_omniglot.h5')
@@ -59,13 +60,13 @@ class TestsOmniglot(unittest.TestCase):
             "data.dataset": "omniglot",
             "data.split": "vinyals",
             "data.train_way": 1,
-            "data.train_n_support": 10,
-            "data.train_n_query": 10,
+            "data.train_support": 10,
+            "data.train_query": 10,
             "data.test_way": 1,
-            "data.test_n_support": 10,
-            "data.test_n_query": 10,
+            "data.test_support": 10,
+            "data.test_query": 10,
             "data.train_episodes": 10,
-            "data.cuda": False,
+            "data.cuda": cuda_on,
             "data.gpu": 0,
             "model.x_dim": "28,28,1",
             "model.z_dim": 64,
@@ -73,7 +74,7 @@ class TestsOmniglot(unittest.TestCase):
             'train.optim_method': "Adam",
             "train.lr": 0.001,
             "train.patience": 5,
-            "train.model_path": 'test_omniglot.h5'
+            "model.save_path": 'test_omniglot.h5'
         }
         train(config)
         os.remove('test_omniglot.h5')
@@ -83,13 +84,13 @@ class TestsOmniglot(unittest.TestCase):
             "data.dataset": "omniglot",
             "data.split": "vinyals",
             "data.train_way": 50,
-            "data.train_n_support": 1,
-            "data.train_n_query": 1,
+            "data.train_support": 1,
+            "data.train_query": 1,
             "data.test_way": 50,
-            "data.test_n_support": 1,
-            "data.test_n_query": 1,
+            "data.test_support": 1,
+            "data.test_query": 1,
             "data.train_episodes": 10,
-            "data.cuda": False,
+            "data.cuda": cuda_on,
             "data.gpu": 0,
             "model.x_dim": "28,28,1",
             "model.z_dim": 64,
@@ -97,7 +98,7 @@ class TestsOmniglot(unittest.TestCase):
             'train.optim_method': "Adam",
             "train.lr": 0.001,
             "train.patience": 5,
-            "train.model_path": 'test_omniglot.h5'
+            "model.save_path": 'test_omniglot.h5'
         }
         train(config)
         os.remove('test_omniglot.h5')

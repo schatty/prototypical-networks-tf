@@ -3,6 +3,7 @@ Logic for model creation, training launching and actions needed to be
 accomplished during training (metrics monitor, model saving etc.)
 """
 
+import os
 import time
 import numpy as np
 import tensorflow as tf
@@ -17,6 +18,11 @@ def train(config):
     np.random.seed(2019)
     tf.random.set_seed(2019)
 
+    # Create folder for model
+    model_dir = config['model.save_path'][:config['model.save_path'].rfind('/')]
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+
     data_dir = f"data/{config['data.dataset']}"
     ret = load(data_dir, config, ['train', 'val'])
     train_loader = ret['train']
@@ -30,8 +36,8 @@ def train(config):
         device_name = 'CPU:0'
 
     # Setup training operations
-    n_support = config['data.train_n_support']
-    n_query = config['data.train_n_query']
+    n_support = config['data.train_support']
+    n_query = config['data.train_query']
     w, h, c = list(map(int, config['model.x_dim'].split(',')))
     model = Prototypical(n_support, n_query, w, h, c)
     optimizer = tf.keras.optimizers.Adam(config['train.lr'])
@@ -101,7 +107,7 @@ def train(config):
         if cur_loss < state['best_val_loss']:
             print("Saving new best model with loss: ", cur_loss)
             state['best_val_loss'] = cur_loss
-            model.save(config['train.model_path'])
+            model.save(config['model.save_path'])
         val_losses.append(cur_loss)
 
         # Early stopping
@@ -123,7 +129,7 @@ def train(config):
         # Validation
         val_loader = state['val_loader']
         loss_func = state['loss_func']
-        for i_episode in range(config['data.train_episodes']):
+        for i_episode in range(config['data.episodes']):
             support, query = val_loader.get_next_episode()
             val_step(loss_func, support, query)
     train_engine.hooks['on_end_episode'] = on_end_episode
@@ -135,7 +141,7 @@ def train(config):
             train_loader=train_loader,
             val_loader=val_loader,
             epochs=config['train.epochs'],
-            n_episodes=config['data.train_episodes'])
+            n_episodes=config['data.episodes'])
     time_end = time.time()
 
     elapsed = time_end - time_start

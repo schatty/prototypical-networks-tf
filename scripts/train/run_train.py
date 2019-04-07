@@ -1,67 +1,34 @@
 import argparse
+import configparser
 
 from train_setup import train
 
+
+def preprocess_config(c):
+    conf_dict = {}
+    int_params = ['data.train_way', 'data.test_way', 'data.train_support',
+                      'data.test_support', 'data.train_query', 'data.test_query',
+                      'data.query', 'data.support', 'data.way', 'data.episodes',
+                      'data.gpu', 'data.cuda', 'model.z_dim', 'train.epochs',
+                      'train.patience']
+    float_params = ['train.lr']
+    for param in c:
+        if param in int_params:
+            conf_dict[param] = int(c[param])
+        elif param in float_params:
+            conf_dict[param] = float(c[param])
+        else:
+            conf_dict[param] = c[param]
+    return conf_dict
+
+
 parser = argparse.ArgumentParser(description='Run training')
-
-default_ds = "omniglot"
-default_split = "vinyals"
-default_way = 60
-default_test_way = 5
-default_n_support = 5
-default_n_query = 5
-default_n_val_support = 5
-default_n_val_query = 5
-default_train_episodes = 100
-
-# data
-parser.add_argument("--data.dataset", type=str, default=default_ds,
-                    help=f"dataset name (default: {default_ds}")
-parser.add_argument("--data.split", type=str, default=default_split,
-                    help=f"splitting name (default: {default_split}")
-parser.add_argument("--data.train_way", type=int, default=default_way,
-                    help=f"number of support classes: (default: {default_way})")
-parser.add_argument("--data.train_n_support", type=int, default=default_n_support,
-                    help=f"number of support examples per class (default: {default_n_support})")
-parser.add_argument("--data.train_n_query", type=int, default=default_n_query,
-                    help=f"number of query examples per class (default: {default_n_query})")
-parser.add_argument("--data.test_way", type=int, default=default_test_way,
-                    help=f"number of support classes in validation: (default: {default_way})")
-parser.add_argument("--data.test_n_support", type=int, default=default_n_val_support,
-                    help=f"number of support examples per class in validation (default: {default_n_support})")
-parser.add_argument("--data.test_n_query", type=int, default=default_n_val_query,
-                    help=f"number of query examples per class in validation (default: {default_n_query})")
-parser.add_argument("--data.train_episodes", type=int, default=default_train_episodes,
-                    help=f"number of train episodes per epoch (default: {default_train_episodes})")
-parser.add_argument("--data.cuda", action='store_true',
-                    help=f"Train on GPU (default: False)")
-parser.add_argument("--data.gpu", type=int, default=0,
-                    help="Default number of GPU for training with CUDA")
-
-# model
-default_input = "28,28,1"
-parser.add_argument("--model.x_dim", type=str, default=default_input,
-                    help=f"dimensionality of input shapes (default: {default_input})")
-parser.add_argument("--model.z_dim", type=int, default=64,
-                    help="dimensionality of input ")
-
-# training
-default_epochs = 20
-default_optim = 'Adam'
-default_lr = 0.001
-default_patience = 200
-
-parser.add_argument('--train.epochs', type=int, default=default_epochs,
-                    help=f"number of epochs (default: {default_epochs})")
-parser.add_argument('--train.optim_method', type=str, default=default_optim,
-                    help=f"optimizator (default: {default_optim})")
-parser.add_argument("--train.lr", type=float, default=default_lr,
-                    help=f"learning rate (default: {default_lr})")
-parser.add_argument("--train.patience", type=int, default=default_patience,
-                    help=f"number of non-improving epochs after which training stops (default: {default_patience})")
-parser.add_argument("--train.model_path", type=str, default="./proto_model.h5",
-                    help="Path to the saved model (default: ./proto_model.h5)")
+parser.add_argument("--config", type=str, default="./scripts/config_omniglot.conf",
+                    help="Path to the config file.")
 
 # Run training
 args = vars(parser.parse_args())
-train(args)
+config = configparser.ConfigParser()
+config.read(args['config'])
+config = preprocess_config(config['TRAIN'])
+train(config)

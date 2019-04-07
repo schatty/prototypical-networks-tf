@@ -10,11 +10,11 @@ from prototf.data import load
 
 
 def eval(config):
-    n_support = config['data.test_n_support']
-    n_query = config['data.test_n_query']
+    n_support = config['data.test_support']
+    n_query = config['data.test_query']
     w, h, c, = list(map(int, config['model.x_dim'].split(',')))
     model = Prototypical(n_support, n_query, w, h, c)
-    model_path = f"{config['model.model_path']}"
+    model_path = f"{config['model.save_path']}"
     model.load(model_path)
     print("Model loaded.")
 
