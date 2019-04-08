@@ -5,7 +5,7 @@ Summary of conducted training procedures and corresponding results. Anyone who w
 
 ### Omniglot
 
-| Accuracy                    | 98.5%            | 94.1%            | 85.4%            | 96.3%            |
+| Accuracy                    | 99.4%            | 97.4%            | 92.2%            | 98.4%            |
 |-----------------------------|------------------|------------------|------------------|------------------|
 | Author                      | Igor Kuznetsov   | Igor Kuznetsov   | Igor Kuznetsov   | Igor Kuznetsov   |
 | data.split                  | vinyals          | vinyals          | vinyals          | vinyals          |
@@ -18,10 +18,10 @@ Summary of conducted training procedures and corresponding results. Anyone who w
 | data.train_episodes         | 100              | 100              | 100              | 100              |
 | model.x_dim                 | 28,28,1          | 28,28,1          | 28,28,1          | 28,28,1          |
 | model.z_dim                 | 64               | 64               | 64               | 64               |
-| train.epochs                | 500              | 500              | 500              | 500              |
+| train.epochs                | 100              | 100              | 100              | 100              |
 | train.optim_method          | Adam             | Adam             | Adam             | Adam             |
 | train.lr                    | 0.001            | 0.001            | 0.001            | 0.001            |
-| train.patience              | 200              | 200              | 200              | 200              |
+| train.patience              | 100              | 100              | 100              | 100              |
 | data.test_way (test)        | 5                | 5                | 20               | 20               |
 | data.test_n_support (test)  | 5                | 1                | 1                | 5                |
 | data.test_n_query (test)    | 5                | 1                | 1                | 5                |
@@ -31,26 +31,26 @@ Summary of conducted training procedures and corresponding results. Anyone who w
 
 ### MiniImagenet
 
-| Accuracy                    | 56.6%            | 56.8%            | 36.6%            | 62.7%            | 62.6%            |
-|-----------------------------|------------------|------------------|------------------|------------------|------------------|
-| Author                      | Igor Kuznetsov   |                  | Igor Kuznetsov   | Igor Kuznetsov   | Igor Kuznetsov   |
-| data.split                  | ravi             | ravi             | ravi             | ravi             | ravi             |
-| data.train_way              | 20               | 20               | 20               | 20               | 20               |
-| data.train_n_support        | 5                | 5                | 5                | 5                | 5                |
-| data.train_n_query          | 5                | 5                | 5                | 5                | 5                |
-| data.test_way (val)         | 5                | 5                | 5                | 5                | 5                |
-| data.test_n_support (val)   | 5                | 5                | 5                | 5                | 5                |
-| data.test_n_query (val)     | 15               | 15               | 15               | 15               | 15               |
-| data.train_episodes         | 100              | 100              | 100              | 100              | 100              |
-| model.x_dim                 | 84,84,3          | 84,84,3          | 84,84,3          | 84,84,3          | 84,84,3          |
-| model.z_dim                 | 64               | 64               | 64               | 64               | 64               |
-| train.epochs                | 500              | 500              | 500              | 500              | 500              |
-| train.optim_method          | Adam             | Adam             | Adam             | Adam             | Adam             |
-| train.lr                    | 0.001            | 0.001            | 0.001            | 0.001            | 0.001            |
-| train.patience              | 200              | 200              | 200              | 200              | 200              |
-| data.test_way (test)        | 5                | 5                | 5                | 5                | 5                |
-| data.test_n_support (test)  | 5                | 5                | 1                | 10               | 10               |
-| data.test_n_query (test)    | 5                | 1                | 1                | 10               | 1                |
-| data.test_n_episodes (test) | 1000             | 1000             | 1000             | 1000             | 1000             |
-| Encoder CNN architecture    | original (paper) | original (paper) | original (paper) | original (paper) | original (paper) |
-| seed                        | 2019             | 2019             | 2019             | 2019             | 2019             |
+| Accuracy                    | 61.9%            | ....?            |
+|-----------------------------|------------------|------------------|
+| Author                      | Igor Kuznetsov   |                  |
+| data.split                  | ravi             | ravi             |
+| data.train_way              | 20               | 30               |
+| data.train_n_support        | 5                | 5                |
+| data.train_n_query          | 15               | 15               |
+| data.test_way (val)         | 5                | 5                |
+| data.test_n_support (val)   | 5                | 5                |
+| data.test_n_query (val)     | 15               | 15               |
+| data.train_episodes         | 100              | 100              |
+| model.x_dim                 | 84,84,3          | 84,84,3          |
+| model.z_dim                 | 64               | 64               |
+| train.epochs                | 300              | 300              |
+| train.optim_method          | Adam             | Adam             | 
+| train.lr                    | 0.001            | 0.001            |
+| train.patience              | 100              | 100              |
+| data.test_way (test)        | 5                | 5                |
+| data.test_n_support (test)  | 5                | 5                |
+| data.test_n_query (test)    | 15               | 1                |
+| data.test_n_episodes (test) | 1000             | 1000             |
+| Encoder CNN architecture    | original (paper) | original (paper) |
+| seed                        | 2019             | 2019             |
