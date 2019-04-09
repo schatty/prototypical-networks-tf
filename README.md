@@ -32,11 +32,17 @@ The repository organized as follows. `data` directory contains scripts for datas
 
 ### Results
 
-Results on Omniglot after training 100 epochs:
+Omniglot:
 
 | Evnironment                 | 5-way-5-shot     | 5-way-1-shot     | 20-way-5-shot    | 20-way-1shot     |
 |-----------------------------|------------------|------------------|------------------|------------------|
 | Accuracy                    | 99.4%            | 97.4%            | 98.4%            | 92.2%            |
+
+miniImagenet
+
+| Evnironment                 | 5-way-5-shot     | 5-way-1-shot     | 
+|-----------------------------|------------------|------------------|
+| Accuracy                    | 66.0%            | 43.5%            |
 
 Additional settings can be found in `results` folder in the root of repository. 
 
