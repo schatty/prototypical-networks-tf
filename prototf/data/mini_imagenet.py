@@ -113,6 +113,10 @@ def load_mini_imagenet(data_dir, config, splits):
         data = np.zeros((len(data_dict['class_dict']), len(data_dict['class_dict'][first_key]), 84, 84, 3))
         for i, (k, v) in enumerate(data_dict['class_dict'].items()):
             data[i, :, :, :, :] = data_dict['image_data'][v, :]
+        data /= 255.
+        data[:, :, :, 0] = (data[:, :, :, 0] - 0.485) / 0.229
+        data[:, :, :, 1] = (data[:, :, :, 1] - 0.456) / 0.224
+        data[:, :, :, 2] = (data[:, :, :, 2] - 0.406) / 0.225
 
         data_loader = DataLoader(data, data.shape[0], n_way, n_support, n_query)
         ret[split] = data_loader
